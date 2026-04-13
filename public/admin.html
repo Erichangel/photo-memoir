@@ -1,0 +1,3640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照片回忆录 - 后台管理</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* ========== 全局样式 ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+
+        /* ========== 滚动条美化 ========== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c4b5c9; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a894af; }
+
+        /* ========== 左侧导航栏 ========== */
+        .sidebar {
+            width: 240px;
+            height: 100vh;
+            background: #2D1B33;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-logo {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sidebar-logo i { color: #E91E63; font-size: 24px; }
+        .sidebar-logo span { color: #fff; font-size: 16px; font-weight: 600; }
+        .nav-menu { padding: 12px 0; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.65);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.08);
+        }
+        .nav-item.active {
+            color: #fff;
+            background: rgba(233,30,99,0.15);
+            border-left-color: #E91E63;
+        }
+        .nav-item i { width: 20px; text-align: center; font-size: 15px; }
+
+        /* ========== 右侧内容区 ========== */
+        .main-content {
+            margin-left: 240px;
+            min-height: 100vh;
+            background: #F5F5F5;
+        }
+
+        /* ========== 顶部栏 ========== */
+        .top-bar {
+            background: #fff;
+            padding: 0 30px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E8E8E8;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; color: #666; font-size: 14px; }
+        .breadcrumb a { color: #999; text-decoration: none; }
+        .breadcrumb a:hover { color: #E91E63; }
+        .breadcrumb .current { color: #333; font-weight: 500; }
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .admin-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #E91E63, #9C27B0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* ========== 页面容器 ========== */
+        .page-content { padding: 24px 30px; }
+        .admin-page { display: none; }
+        .admin-page.active { display: block; }
+
+        /* ========== 统计卡片 ========== */
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .stat-info h3 { font-size: 24px; font-weight: 700; color: #333; }
+        .stat-info p { font-size: 13px; color: #999; margin-top: 2px; }
+
+        /* ========== 章节卡片 ========== */
+        .chapter-card {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: transform 0.25s, box-shadow 0.25s;
+        }
+        .chapter-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        .chapter-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        /* ========== Toggle 开关 ========== */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #ccc;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            content: "";
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: #E91E63; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* ========== 上传区域 ========== */
+        .upload-zone {
+            border: 2px dashed #D0D0D0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            color: #999;
+            transition: border-color 0.2s, background 0.2s;
+            cursor: pointer;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #E91E63;
+            background: rgba(233,30,99,0.03);
+        }
+
+        /* ========== 图片网格 ========== */
+        .photo-grid-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        .photo-grid-item:hover { transform: scale(1.02); }
+        .photo-grid-item img { width: 100%; height: 160px; object-fit: cover; }
+        .photo-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 160px;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .photo-grid-item:hover .photo-overlay,
+        .chapter-card:hover .photo-overlay { opacity: 1; }
+        .video-card-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        .chapter-card:hover .video-card-overlay { opacity: 1; }
+        .video-card-overlay button { position: relative; z-index: 11; }
+
+        /* ========== 编辑器 ========== */
+        .editor-toolbar button {
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #555;
+            transition: background 0.15s;
+        }
+        .editor-toolbar button:hover { background: #f0f0f0; }
+        .editor-textarea {
+            background: #1E1E1E;
+            color: #D4D4D4;
+            font-family: "Consolas", "Monaco", monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 20px;
+            border: none;
+            border-radius: 0 0 8px 8px;
+            resize: none;
+            width: 100%;
+            min-height: 400px;
+            outline: none;
+        }
+        .preview-area {
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            min-height: 400px;
+            line-height: 1.8;
+        }
+        .preview-area h1 { font-size: 28px; font-weight: 700; margin-bottom: 12px; color: #333; }
+        .preview-area h2 { font-size: 22px; font-weight: 600; margin: 16px 0 8px; color: #444; }
+        .preview-area p { color: #555; margin-bottom: 12px; }
+        .preview-area blockquote {
+            border-left: 4px solid #E91E63;
+            padding: 8px 16px;
+            margin: 12px 0;
+            background: #FFF0F3;
+            color: #666;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* ========== 表格样式 ========== */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th {
+            background: #FAFAFA;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+            border-bottom: 1px solid #EEE;
+        }
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #F0F0F0;
+            font-size: 14px;
+            color: #444;
+        }
+        .data-table tr:hover td { background: #FAFAFA; }
+
+        /* ========== 用户卡片 ========== */
+        .user-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .user-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .user-avatar-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+        }
+
+        /* ========== 评论卡片 ========== */
+        .comment-item {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            display: flex;
+            gap: 14px;
+            transition: box-shadow 0.2s;
+        }
+        .comment-item:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+
+        /* ========== 分页器 ========== */
+        .pagination { display: flex; gap: 4px; align-items: center; }
+        .pagination button {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+            transition: all 0.15s;
+        }
+        .pagination button:hover { border-color: #E91E63; color: #E91E63; }
+        .pagination button.active { background: #E91E63; color: #fff; border-color: #E91E63; }
+
+        /* ========== 设置分组 ========== */
+        .settings-group {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .settings-group h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+        }
+        .setting-row + .setting-row { border-top: 1px solid #F8F8F8; }
+        .setting-label { font-size: 14px; color: #555; }
+        .setting-input {
+            padding: 8px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 320px;
+        }
+        .setting-input:focus { border-color: #E91E63; }
+
+        /* ========== 按钮样式 ========== */
+        .btn-primary {
+            background: #E91E63;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary:hover { background: #D81B60; }
+        .btn-outline {
+            background: #fff;
+            color: #555;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-outline:hover { border-color: #E91E63; color: #E91E63; }
+        .btn-danger {
+            background: #FF5252;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-danger:hover { background: #E53935; }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        /* ========== 标签样式 ========== */
+        .tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .tag-pink { background: #FFF0F3; color: #E91E63; }
+        .tag-blue { background: #E3F2FD; color: #1976D2; }
+        .tag-green { background: #E8F5E9; color: #388E3C; }
+        .tag-orange { background: #FFF3E0; color: #F57C00; }
+        .tag-purple { background: #F3E5F5; color: #7B1FA2; }
+
+        /* ========== 视频时长标签 ========== */
+        .video-duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* ========== 批量操作栏 ========== */
+        .batch-bar {
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ========== 播放按钮 ========== */
+        .play-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #E91E63;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .play-btn:hover { background: #D81B60; }
+
+        /* ========== 重命名弹窗样式 ========== */
+        .rename-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .rename-modal-overlay.active {
+            display: flex;
+        }
+        .rename-modal {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            width: 440px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: renameModalIn 0.25s ease;
+        }
+        @keyframes renameModalIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .rename-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 0;
+        }
+        .rename-modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        .rename-modal-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #999;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        .rename-modal-close:hover { color: #333; }
+        .rename-modal-body {
+            padding: 20px 24px;
+        }
+        .rename-modal-body label {
+            display: block;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .rename-current-name {
+            margin-bottom: 16px;
+        }
+        .rename-current-name span {
+            display: block;
+            font-size: 14px;
+            color: #999;
+            padding: 8px 12px;
+            background: #F9F9F9;
+            border-radius: 8px;
+            word-break: break-all;
+        }
+        .rename-input-group {
+            margin-bottom: 16px;
+        }
+        .rename-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        .rename-input-row input {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            border-right: none !important;
+        }
+        .rename-ext {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 14px;
+            background: #F5F5F5;
+            border: 1px solid #ddd;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+            height: 40px;
+            box-sizing: border-box;
+        }
+        .rename-preview {
+            margin-bottom: 12px;
+        }
+        .rename-preview span {
+            display: block;
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            padding: 8px 12px;
+            background: #FFF0F3;
+            border-radius: 8px;
+            word-break: break-all;
+        }
+        .rename-conflict {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #FFF0F0;
+            border: 1px solid #FFCDD2;
+            border-radius: 8px;
+            color: #F44336;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .rename-modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 0 24px 20px;
+        }
+
+        /* ========== 批量重命名弹窗扩展样式 ========== */
+        .batch-rename-vars {
+            margin-bottom: 16px;
+        }
+        .batch-rename-var-tags {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #666;
+            padding: 10px 12px;
+            background: #F9F9F9;
+            border-radius: 8px;
+        }
+        .batch-rename-var-tags .tag {
+            margin-right: 2px;
+        }
+        .batch-rename-preview {
+            margin-bottom: 4px;
+        }
+        .batch-rename-preview-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .batch-rename-preview-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #F9F9F9;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .batch-rename-preview-item .arrow {
+            color: #E91E63;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .batch-rename-preview-item .old-name {
+            color: #999;
+            text-decoration: line-through;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .batch-rename-preview-item .new-name {
+            color: #333;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* ========== Toast 通知样式 ========== */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #333;
+            animation: toastIn 0.3s ease;
+            min-width: 260px;
+        }
+        .toast.toast-out {
+            animation: toastOut 0.3s ease forwards;
+        }
+        .toast i {
+            font-size: 18px;
+            color: #4CAF50;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(40px); }
+        }
+
+/* ========== 图片灯箱 ========== */
+.lightbox-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.lightbox-overlay.active { display: flex; }
+.lightbox-overlay img {
+    max-width: 95vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+}
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+}
+.lightbox-close:hover { opacity: 1; }
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff;
+    font-size: 36px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    padding: 20px;
+}
+.lightbox-nav:hover { opacity: 1; }
+.lightbox-prev { left: 20px; }
+.lightbox-next { right: 20px; }
+.lightbox-caption {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* ========== 视频播放器弹窗 ========== */
+.video-player-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.video-player-overlay.active { display: flex; }
+.video-player-modal {
+    background: #1a1a2e;
+    border-radius: 16px;
+    overflow: hidden;
+    width: 800px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.video-player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.video-player-header h3 {
+    color: #fff;
+    font-size: 16px;
+    margin: 0;
+}
+.video-player-close {
+    color: rgba(255,255,255,0.6);
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition: color 0.2s;
+}
+.video-player-close:hover { color: #fff; }
+.video-player-screen {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.video-player-screen img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.7;
+}
+.video-player-play-btn {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(233,30,99,0.9);
+    color: #fff;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s, background 0.2s;
+}
+.video-player-play-btn:hover { transform: scale(1.1); background: #E91E63; }
+.video-player-play-btn.playing { background: rgba(255,255,255,0.2); }
+.video-player-controls {
+    padding: 16px 20px;
+}
+.video-progress {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    position: relative;
+}
+.video-progress-bar {
+    height: 100%;
+    background: #E91E63;
+    border-radius: 2px;
+    width: 35%;
+    transition: width 0.3s;
+}
+.video-controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.video-controls-left, .video-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.video-ctrl-btn {
+    color: rgba(255,255,255,0.7);
+    font-size: 16px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition: color 0.2s;
+}
+.video-ctrl-btn:hover { color: #fff; }
+.video-time {
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+}
+.active-sort { background: linear-gradient(135deg, #E91E63, #FF5252) !important; color: #fff !important; border-color: #E91E63 !important; }
+    </style>
+</head>
+<body>
+
+<!-- ==================== 左侧导航栏 ==================== -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <i class="fas fa-camera-retro"></i>
+        <span>照片回忆录</span>
+    </div>
+    <nav class="nav-menu">
+        <a class="nav-item active" data-page="admin-dashboard" onclick="switchPage('admin-dashboard', this)">
+            <i class="fas fa-chart-pie"></i> 仪表盘
+        </a>
+        <a class="nav-item" data-page="admin-chapters" onclick="switchPage('admin-chapters', this)">
+            <i class="fas fa-book"></i> 章节管理
+        </a>
+        <a class="nav-item" data-page="admin-photos" onclick="switchPage('admin-photos', this)">
+            <i class="fas fa-images"></i> 图片管理
+        </a>
+        <a class="nav-item" data-page="admin-videos" onclick="switchPage('admin-videos', this)">
+            <i class="fas fa-video"></i> 视频管理
+        </a>
+        <a class="nav-item" data-page="admin-editor" onclick="switchPage('admin-editor', this)">
+            <i class="fas fa-edit"></i> 文章编辑
+        </a>
+        <a class="nav-item" data-page="admin-music" onclick="switchPage('admin-music', this)">
+            <i class="fas fa-music"></i> 音乐管理
+        </a>
+        <a class="nav-item" data-page="admin-comments" onclick="switchPage('admin-comments', this)">
+            <i class="fas fa-comments"></i> 评论管理
+        </a>
+        <a class="nav-item" data-page="admin-users" onclick="switchPage('admin-users', this)">
+            <i class="fas fa-users"></i> 用户管理
+        </a>
+        <a class="nav-item" data-page="admin-settings" onclick="switchPage('admin-settings', this)">
+            <i class="fas fa-cog"></i> 系统设置
+        </a>
+    </nav>
+</aside>
+
+<!-- ==================== 右侧主内容区 ==================== -->
+<div class="main-content">
+
+    <!-- ========== 顶部栏 ========== -->
+    <header class="top-bar">
+        <div class="breadcrumb">
+            <a href="#"><i class="fas fa-home"></i></a>
+            <span>/</span>
+            <span class="current" id="breadcrumb-text">仪表盘</span>
+        </div>
+        <div class="admin-profile">
+            <span style="font-size:14px;color:#555;">管理员</span>
+            <div class="admin-avatar">管</div>
+        </div>
+    </header>
+
+    <!-- ==================== 页面1：仪表盘 ==================== -->
+    <div class="page-content">
+        <div class="admin-page active" id="admin-dashboard">
+
+            <!-- 第一行统计卡片 -->
+            <div class="grid grid-cols-4 gap-5 mb-5">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#42A5F5,#1E88E5);">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>1,286</h3>
+                        <p>照片总数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#AB47BC,#8E24AA);">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>48</h3>
+                        <p>视频总数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#EC407A,#E91E63);">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>24</h3>
+                        <p>章节数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#FFA726,#FB8C00);">
+                        <i class="fas fa-comment-dots"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>156</h3>
+                        <p>评论数</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二行统计卡片 -->
+            <div class="grid grid-cols-3 gap-5 mb-6">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#66BB6A,#43A047);">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>5</h3>
+                        <p>用户数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#26C6DA,#00ACC1);">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>12.8 GB</h3>
+                        <p>存储空间</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#EF5350,#E53935);">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>36</h3>
+                        <p>本月新增</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最近活动 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-clock text-pink-500 mr-2"></i>最近活动
+                </h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>用户</th>
+                            <th>操作</th>
+                            <th>详情</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2024-03-20 14:32</td>
+                            <td><span class="tag tag-pink">老公</span></td>
+                            <td>上传照片</td>
+                            <td>上传了 3 张照片到「2024-03-15 春日踏青」</td>
+                        </tr>
+                        <tr>
+                            <td>2024-03-20 11:15</td>
+                            <td><span class="tag tag-blue">老婆</span></td>
+                            <td>发表评论</td>
+                            <td>在「2024-02-14 情人节」中评论："好甜呀~"</td>
+                        </tr>
+                        <tr>
+                            <td>2024-03-19 20:08</td>
+                            <td><span class="tag tag-pink">老公</span></td>
+                            <td>新建章节</td>
+                            <td>创建了新章节「2024-03-15 春日踏青」</td>
+                        </tr>
+                        <tr>
+                            <td>2024-03-19 16:45</td>
+                            <td><span class="tag tag-blue">老婆</span></td>
+                            <td>上传视频</td>
+                            <td>上传了 1 个视频到「2024-03-10 周末时光」</td>
+                        </tr>
+                        <tr>
+                            <td>2024-03-18 09:20</td>
+                            <td><span class="tag tag-green">管理员</span></td>
+                            <td>系统备份</td>
+                            <td>执行了数据备份，备份文件大小 2.3 GB</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 快捷操作 -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-bolt text-yellow-500 mr-2"></i>快捷操作
+                </h2>
+                <div class="flex gap-4 flex-wrap">
+                    <button class="btn-primary" onclick="doScanFolders()">
+                        <i class="fas fa-folder-open"></i> 扫描文件夹
+                    </button>
+                    <button class="btn-primary" onclick="document.getElementById('newChapterModal').style.display='flex'">
+                        <i class="fas fa-plus"></i> 添加章节
+                    </button>
+                    <button class="btn-primary" onclick="openUploadModal('photo')">
+                        <i class="fas fa-cloud-upload-alt"></i> 上传照片
+                    </button>
+                    <button class="btn-primary" onclick="openUploadModal('video')">
+                        <i class="fas fa-video"></i> 上传视频
+                    </button>
+                    <button class="btn-outline" onclick="alert('正在备份数据...')">
+                        <i class="fas fa-download"></i> 备份数据
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 页面2：章节管理 ==================== -->
+        <div class="admin-page" id="admin-chapters">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-bold text-gray-800">章节管理</h1>
+                <div class="flex gap-3">
+                    <button class="btn-outline" onclick="doScanFolders()">
+                        <i class="fas fa-folder-open"></i> 扫描文件夹
+                    </button>
+                    <button class="btn-primary" onclick="alert('新建章节')">
+                        <i class="fas fa-plus"></i> 新建章节
+                    </button>
+                </div>
+            </div>
+
+            <!-- 排序栏 -->
+            <div class="flex items-center gap-3 mb-4">
+                <span style="font-size:13px;color:#666;"><i class="fas fa-sort mr-1"></i>排序方式：</span>
+                <button class="btn-outline btn-sm chapter-sort-btn active-sort" data-sort="date" onclick="sortChapters('date')" style="font-size:12px;padding:6px 14px;">
+                    <i class="fas fa-calendar-alt mr-1"></i> 按开始时间
+                </button>
+                <button class="btn-outline btn-sm chapter-sort-btn" data-sort="name" onclick="sortChapters('name')" style="font-size:12px;padding:6px 14px;">
+                    <i class="fas fa-font mr-1"></i> 按名称
+                </button>
+            </div>
+
+            <!-- 拖拽排序提示 -->
+            <div class="bg-blue-50 text-blue-600 text-sm rounded-lg px-4 py-3 mb-5 flex items-center gap-2">
+                <i class="fas fa-info-circle"></i>
+                <span>提示：拖拽章节卡片可以调整排序顺序</span>
+            </div>
+
+            <!-- 章节卡片网格 -->
+            <div class="grid grid-cols-2 gap-6">
+                <!-- 章节卡片1 -->
+                <div class="chapter-card">
+                    <img src="https://picsum.photos/seed/spring2024/600/360" alt="春日踏青">
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="tag tag-pink chapter-date-tag" data-start="2024-03-15" data-end="2024-03-20">2024-03-15 ~ 2024-03-20</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">春日踏青</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-image mr-1"></i> 48 张照片</span>
+                            <span><i class="fas fa-video mr-1"></i> 2 个视频</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-outline btn-sm btn-chapter-edit"><i class="fas fa-edit"></i> 编辑</button>
+                            <button class="btn-outline btn-sm btn-chapter-delete" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 章节卡片2 -->
+                <div class="chapter-card">
+                    <img src="https://picsum.photos/seed/valentine2024/600/360" alt="情人节">
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="tag tag-pink chapter-date-tag" data-start="2024-02-14" data-end="">2024-02-14</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">情人节</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-image mr-1"></i> 36 张照片</span>
+                            <span><i class="fas fa-video mr-1"></i> 1 个视频</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-outline btn-sm btn-chapter-edit"><i class="fas fa-edit"></i> 编辑</button>
+                            <button class="btn-outline btn-sm btn-chapter-delete" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 章节卡片3 -->
+                <div class="chapter-card">
+                    <img src="https://picsum.photos/seed/weekend2024/600/360" alt="周末时光">
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="tag tag-blue chapter-date-tag" data-start="2024-07-20" data-end="2024-07-25">2024-07-20 ~ 2024-07-25</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">周末时光</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-image mr-1"></i> 22 张照片</span>
+                            <span><i class="fas fa-video mr-1"></i> 3 个视频</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-outline btn-sm btn-chapter-edit"><i class="fas fa-edit"></i> 编辑</button>
+                            <button class="btn-outline btn-sm btn-chapter-delete" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 章节卡片4 -->
+                <div class="chapter-card">
+                    <img src="https://picsum.photos/seed/newyear2024/600/360" alt="新年">
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="tag tag-orange chapter-date-tag" data-start="2024-10-05" data-end="2024-10-10">2024-10-05 ~ 2024-10-10</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">新年快乐</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-image mr-1"></i> 65 张照片</span>
+                            <span><i class="fas fa-video mr-1"></i> 4 个视频</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-outline btn-sm btn-chapter-edit"><i class="fas fa-edit"></i> 编辑</button>
+                            <button class="btn-outline btn-sm btn-chapter-delete" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 页面3：图片管理 ==================== -->
+        <div class="admin-page" id="admin-photos">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-bold text-gray-800">图片管理</h1>
+                <div class="flex gap-3 items-center">
+                    <select class="setting-input" style="width:200px;">
+                        <option>全部章节</option>
+                        <option>春日踏青</option>
+                        <option>情人节</option>
+                        <option>周末时光</option>
+                        <option>新年快乐</option>
+                    </select>
+                    <button class="btn-primary" onclick="openUploadModal('photo')">
+                        <i class="fas fa-cloud-upload-alt"></i> 上传图片
+                    </button>
+                </div>
+            </div>
+
+            <!-- 上传区域 -->
+            <div class="upload-zone mb-6" id="photoUploadZone">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 mb-1">拖拽图片到此处或点击上传</p>
+                <p class="text-gray-400 text-sm">支持 JPG、PNG、GIF 格式，单张不超过 10MB</p>
+            </div>
+
+            <!-- 图片网格 -->
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="photo-grid-item" data-filename="IMG_20240315_001.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo1/400/300" alt="照片1" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240315_001.jpg</p>
+                    </div>
+                </div>
+                <div class="photo-grid-item" data-filename="IMG_20240315_002.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo2/400/300" alt="照片2" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240315_002.jpg</p>
+                    </div>
+                </div>
+                <div class="photo-grid-item" data-filename="IMG_20240315_003.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo3/400/300" alt="照片3" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240315_003.jpg</p>
+                    </div>
+                </div>
+                <div class="photo-grid-item" data-filename="IMG_20240310_001.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo4/400/300" alt="照片4" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240310_001.jpg</p>
+                    </div>
+                </div>
+                <div class="photo-grid-item" data-filename="IMG_20240310_002.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo5/400/300" alt="照片5" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240310_002.jpg</p>
+                    </div>
+                </div>
+                <div class="photo-grid-item" data-filename="IMG_20240214_001.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo6/400/300" alt="照片6" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240214_001.jpg</p>
+                    </div>
+                </div>
+                <div class="photo-grid-item" data-filename="IMG_20240214_002.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo7/400/300" alt="照片7" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240214_002.jpg</p>
+                    </div>
+                </div>
+                <div class="photo-grid-item" data-filename="IMG_20240101_001.jpg">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/photo8/400/300" alt="照片8" style="height:160px;">
+                        <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="photo-overlay">
+                            <button class="btn-sm btn-photo-preview" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                            <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-700 truncate photo-filename">IMG_20240101_001.jpg</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 批量操作栏 -->
+            <div class="batch-bar">
+                <span class="text-sm text-gray-500">已选 <strong class="text-gray-800">0</strong> 张</span>
+                <div class="flex gap-3">
+                    <button class="btn-outline btn-sm" id="btnBatchDeletePhotos"><i class="fas fa-trash"></i> 批量删除</button>
+                    <button class="btn-outline btn-sm" id="btnBatchRename"><i class="fas fa-pen"></i> 批量重命名</button>
+                </div>
+            </div>
+        </div>
+        <!-- ==================== 页面4：视频管理 ==================== -->
+        <!-- 单张重命名弹窗 -->
+        <div class="rename-modal-overlay" id="renameModalOverlay">
+            <div class="rename-modal" id="renameModal">
+                <div class="rename-modal-header">
+                    <h3>重命名图片</h3>
+                    <button class="rename-modal-close" id="renameModalClose"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="rename-modal-body">
+                    <div class="rename-current-name">
+                        <label>当前文件名</label>
+                        <span id="renameCurrentName">-</span>
+                    </div>
+                    <div class="rename-input-group">
+                        <label for="renameNewName">新文件名</label>
+                        <div class="rename-input-row">
+                            <input type="text" id="renameNewName" class="setting-input" style="width:100%;" placeholder="输入新文件名">
+                            <span class="rename-ext" id="renameExt">.jpg</span>
+                        </div>
+                    </div>
+                    <div class="rename-preview">
+                        <label>文件名预览</label>
+                        <span id="renamePreviewName">-</span>
+                    </div>
+                    <div class="rename-conflict" id="renameConflict" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i> 该文件名已存在
+                    </div>
+                </div>
+                <div class="rename-modal-footer">
+                    <button class="btn-outline btn-sm" id="renameCancelBtn">取消</button>
+                    <button class="btn-primary btn-sm" id="renameConfirmBtn" style="background:#E91E63;">确认重命名</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量重命名弹窗 -->
+        <div class="rename-modal-overlay" id="batchRenameModalOverlay">
+            <div class="rename-modal" id="batchRenameModal" style="max-width:560px;">
+                <div class="rename-modal-header">
+                    <h3>批量重命名</h3>
+                    <button class="rename-modal-close" id="batchRenameModalClose"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="rename-modal-body">
+                    <div class="rename-input-group">
+                        <label for="batchRenameTemplate">命名模板</label>
+                        <input type="text" id="batchRenameTemplate" class="setting-input" style="width:100%;" value="{chapter_date}_{chapter_title}_{index}" placeholder="输入命名模板">
+                    </div>
+                    <div class="batch-rename-vars">
+                        <label>可用变量</label>
+                        <div class="batch-rename-var-tags">
+                            <span class="tag tag-pink">{chapter_date}</span> 章节日期
+                            <span class="tag tag-blue">{chapter_title}</span> 章节标题
+                            <span class="tag tag-green">{index}</span> 序号（从001开始）
+                        </div>
+                    </div>
+                    <div class="batch-rename-preview">
+                        <label>预览（前3张）</label>
+                        <div id="batchRenamePreviewList" class="batch-rename-preview-list">
+                            <!-- 动态填充 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="rename-modal-footer">
+                    <button class="btn-outline btn-sm" id="batchRenameCancelBtn">取消</button>
+                    <button class="btn-primary btn-sm" id="batchRenameConfirmBtn" style="background:#E91E63;">执行批量重命名</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视频单张重命名弹窗 -->
+        <div class="rename-modal-overlay" id="videoRenameModalOverlay">
+            <div class="rename-modal" id="videoRenameModal">
+                <div class="rename-modal-header">
+                    <h3>重命名视频</h3>
+                    <button class="rename-modal-close" id="videoRenameModalClose"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="rename-modal-body">
+                    <div class="rename-current-name">
+                        <label>当前文件名</label>
+                        <span id="videoRenameCurrentName">-</span>
+                    </div>
+                    <div class="rename-input-group">
+                        <label for="videoRenameNewName">新文件名</label>
+                        <div class="rename-input-row">
+                            <input type="text" id="videoRenameNewName" class="setting-input" style="width:100%;" placeholder="输入新文件名">
+                            <span class="rename-ext" id="videoRenameExt">.mp4</span>
+                        </div>
+                    </div>
+                    <div class="rename-preview">
+                        <label>文件名预览</label>
+                        <span id="videoRenamePreviewName">-</span>
+                    </div>
+                    <div class="rename-conflict" id="videoRenameConflict" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i> 该文件名已存在
+                    </div>
+                </div>
+                <div class="rename-modal-footer">
+                    <button class="btn-outline btn-sm" id="videoRenameCancelBtn">取消</button>
+                    <button class="btn-primary btn-sm" id="videoRenameConfirmBtn" style="background:#E91E63;">确认重命名</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视频批量重命名弹窗 -->
+        <div class="rename-modal-overlay" id="videoBatchRenameModalOverlay">
+            <div class="rename-modal" id="videoBatchRenameModal" style="max-width:560px;">
+                <div class="rename-modal-header">
+                    <h3>批量重命名视频</h3>
+                    <button class="rename-modal-close" id="videoBatchRenameModalClose"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="rename-modal-body">
+                    <div class="rename-input-group">
+                        <label for="videoBatchRenameTemplate">命名模板</label>
+                        <input type="text" id="videoBatchRenameTemplate" class="setting-input" style="width:100%;" value="{chapter_date}_{chapter_title}_{index}" placeholder="输入命名模板">
+                    </div>
+                    <div class="batch-rename-vars">
+                        <label>可用变量</label>
+                        <div class="batch-rename-var-tags">
+                            <span class="tag tag-pink">{chapter_date}</span> 章节日期
+                            <span class="tag tag-blue">{chapter_title}</span> 章节标题
+                            <span class="tag tag-green">{index}</span> 序号（从001开始）
+                        </div>
+                    </div>
+                    <div class="batch-rename-preview">
+                        <label>预览（前3个）</label>
+                        <div id="videoBatchRenamePreviewList" class="batch-rename-preview-list">
+                            <!-- 动态填充 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="rename-modal-footer">
+                    <button class="btn-outline btn-sm" id="videoBatchRenameCancelBtn">取消</button>
+                    <button class="btn-primary btn-sm" id="videoBatchRenameConfirmBtn" style="background:#E91E63;">执行批量重命名</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast 通知 -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- ==================== 页面4：视频管理 ==================== -->
+        <div class="admin-page" id="admin-videos">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-bold text-gray-800">视频管理</h1>
+                <div class="flex gap-3 items-center">
+                    <select class="setting-input" style="width:200px;">
+                        <option>全部章节</option>
+                        <option>春日踏青</option>
+                        <option>情人节</option>
+                        <option>周末时光</option>
+                    </select>
+                    <button class="btn-primary" onclick="openUploadModal('video')">
+                        <i class="fas fa-cloud-upload-alt"></i> 上传视频
+                    </button>
+                </div>
+            </div>
+
+            <!-- 上传区域 -->
+            <div class="upload-zone mb-6">
+                <i class="fas fa-video text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 mb-1">拖拽视频到此处或点击上传</p>
+                <p class="text-gray-400 text-sm">支持 MP4、MOV、AVI 格式，单个不超过 500MB</p>
+            </div>
+
+            <!-- 视频卡片网格 -->
+            <div class="grid grid-cols-4 gap-5">
+                <div class="chapter-card" data-filename="春日踏青_VLOG.mp4">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/video1/400/250" alt="视频1" style="height:160px;">
+                        <span class="video-duration">02:35</span>
+                        <input type="checkbox" class="video-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="video-card-overlay">
+                            <button class="btn-sm btn-video-play" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="播放"><i class="fas fa-play"></i></button>
+                            <button class="btn-sm btn-video-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="删除"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-sm font-medium text-gray-700 truncate video-filename">春日踏青_VLOG.mp4</p>
+                        <p class="text-xs text-gray-400 mt-1">128.5 MB</p>
+                    </div>
+                </div>
+                <div class="chapter-card" data-filename="周末做饭.mp4">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/video2/400/250" alt="视频2" style="height:160px;">
+                        <span class="video-duration">05:12</span>
+                        <input type="checkbox" class="video-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="video-card-overlay">
+                            <button class="btn-sm btn-video-play" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="播放"><i class="fas fa-play"></i></button>
+                            <button class="btn-sm btn-video-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="删除"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-sm font-medium text-gray-700 truncate video-filename">周末做饭.mp4</p>
+                        <p class="text-xs text-gray-400 mt-1">256.3 MB</p>
+                    </div>
+                </div>
+                <div class="chapter-card" data-filename="情人节惊喜.mp4">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/video3/400/250" alt="视频3" style="height:160px;">
+                        <span class="video-duration">01:48</span>
+                        <input type="checkbox" class="video-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="video-card-overlay">
+                            <button class="btn-sm btn-video-play" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="播放"><i class="fas fa-play"></i></button>
+                            <button class="btn-sm btn-video-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="删除"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-sm font-medium text-gray-700 truncate video-filename">情人节惊喜.mp4</p>
+                        <p class="text-xs text-gray-400 mt-1">89.7 MB</p>
+                    </div>
+                </div>
+                <div class="chapter-card" data-filename="新年烟花.mp4">
+                    <div class="relative">
+                        <img src="https://picsum.photos/seed/video4/400/250" alt="视频4" style="height:160px;">
+                        <span class="video-duration">03:20</span>
+                        <input type="checkbox" class="video-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+                        <div class="video-card-overlay">
+                            <button class="btn-sm btn-video-play" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="播放"><i class="fas fa-play"></i></button>
+                            <button class="btn-sm btn-video-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                            <button class="btn-sm" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="删除"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-sm font-medium text-gray-700 truncate video-filename">新年烟花.mp4</p>
+                        <p class="text-xs text-gray-400 mt-1">312.1 MB</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 批量操作栏 -->
+            <div class="batch-bar">
+                <span class="text-sm text-gray-500">已选 <strong class="text-gray-800">0</strong> 个</span>
+                <div class="flex gap-3">
+                    <button class="btn-outline btn-sm" id="btnBatchDeleteVideos"><i class="fas fa-trash"></i> 批量删除</button>
+                    <button class="btn-outline btn-sm" id="btnBatchRenameVideo"><i class="fas fa-pen"></i> 批量重命名</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 页面5：文章编辑器 ==================== -->
+        <div class="admin-page" id="admin-editor">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-bold text-gray-800">文章编辑</h1>
+                <div class="flex gap-3 items-center">
+                    <select class="setting-input" style="width:200px;">
+                        <option>春日踏青</option>
+                        <option>情人节</option>
+                        <option>周末时光</option>
+                        <option>新年快乐</option>
+                    </select>
+                    <button class="btn-primary" onclick="alert('文章已保存！')">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </div>
+            </div>
+
+            <!-- 自动保存提示 -->
+            <div class="text-sm text-gray-400 mb-4 flex items-center gap-2">
+                <i class="fas fa-check-circle text-green-400"></i>
+                已自动保存于 12:30:45
+            </div>
+
+            <!-- 左右分栏 -->
+            <div class="grid grid-cols-2 gap-6">
+                <!-- 左侧：编辑区 -->
+                <div>
+                    <!-- 工具栏 -->
+                    <div class="editor-toolbar flex gap-1 flex-wrap bg-white border border-gray-200 border-b-0 rounded-t-lg p-2">
+                        <button title="加粗" data-action="bold"><i class="fas fa-bold"></i></button>
+                        <button title="斜体" data-action="italic"><i class="fas fa-italic"></i></button>
+                        <button title="下划线"><i class="fas fa-underline"></i></button>
+                        <span style="width:1px;background:#ddd;margin:4px 6px;"></span>
+                        <button title="标题1" data-action="h1">H1</button>
+                        <button title="标题2" data-action="h2">H2</button>
+                        <button title="标题3" data-action="h3">H3</button>
+                        <span style="width:1px;background:#ddd;margin:4px 6px;"></span>
+                        <button title="无序列表" data-action="list"><i class="fas fa-list-ul"></i></button>
+                        <button title="有序列表"><i class="fas fa-list-ol"></i></button>
+                        <button title="引用" data-action="quote"><i class="fas fa-quote-right"></i></button>
+                        <span style="width:1px;background:#ddd;margin:4px 6px;"></span>
+                        <button title="插入图片" data-action="image"><i class="fas fa-image"></i></button>
+                        <button title="插入链接" data-action="link"><i class="fas fa-link"></i></button>
+                    </div>
+                    <!-- Markdown 编辑区 -->
+                    <textarea id="editorTextarea" class="editor-textarea" spellcheck="false"># 春日踏青
+
+## 那一天的阳光
+
+2024年3月15日，我们决定趁着春光正好，去郊外踏青。
+
+> 春风十里不如你，桃花三月恰逢时。
+
+### 我们的路线
+
+1. 早上出发，驱车前往郊外公园
+2. 沿着湖边小路散步
+3. 在樱花树下野餐
+4. 下午去了附近的古镇逛了逛
+
+### 美好瞬间
+
+这次踏青留下了很多美好的回忆，每一张照片都记录着我们的幸福时光。特别是樱花树下的那张合影，成为了我最喜欢的照片之一。
+
+---
+
+*写于2024年3月16日*</textarea>
+                </div>
+
+                <!-- 右侧：预览区 -->
+                <div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-sm font-semibold text-gray-600"><i class="fas fa-eye mr-1"></i>预览</span>
+                    </div>
+                    <div id="editorPreview" class="preview-area">
+                        <h1>春日踏青</h1>
+                        <h2>那一天的阳光</h2>
+                        <p>2024年3月15日，我们决定趁着春光正好，去郊外踏青。</p>
+                        <blockquote>春风十里不如你，桃花三月恰逢时。</blockquote>
+                        <h2>我们的路线</h2>
+                        <p>1. 早上出发，驱车前往郊外公园<br>2. 沿着湖边小路散步<br>3. 在樱花树下野餐<br>4. 下午去了附近的古镇逛了逛</p>
+                        <h2>美好瞬间</h2>
+                        <p>这次踏青留下了很多美好的回忆，每一张照片都记录着我们的幸福时光。特别是樱花树下的那张合影，成为了我最喜欢的照片之一。</p>
+                        <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+                        <p style="color:#999;font-style:italic;">写于2024年3月16日</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 页面6：音乐管理 ==================== -->
+        <div class="admin-page" id="admin-music">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-bold text-gray-800">音乐管理</h1>
+                <button class="btn-primary" onclick="alert('上传音乐')">
+                    <i class="fas fa-cloud-upload-alt"></i> 上传音乐
+                </button>
+            </div>
+
+            <!-- 上传区域 -->
+            <div class="upload-zone mb-6">
+                <i class="fas fa-music text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 mb-1">拖拽音乐文件到此处或点击上传</p>
+                <p class="text-gray-400 text-sm">支持 MP3、WAV、FLAC 格式</p>
+            </div>
+
+            <!-- 音乐列表 -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:60px;">序号</th>
+                            <th>标题</th>
+                            <th>已关联章节</th>
+                            <th style="width:140px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td class="flex items-center gap-3">
+                                <button class="play-btn" onclick="this.querySelector('i').classList.toggle('fa-pause');this.querySelector('i').classList.toggle('fa-play');">
+                                    <i class="fas fa-play" style="margin-left:1px;"></i>
+                                </button>
+                                <span>晴天 - 周杰伦</span>
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    <span class="tag tag-pink" style="font-size:11px;">全部章节</span>
+                                    <button class="btn-music-chapter" data-index="0" style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;color:#666;cursor:pointer;">设置</button>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td class="flex items-center gap-3">
+                                <button class="play-btn" onclick="this.querySelector('i').classList.toggle('fa-pause');this.querySelector('i').classList.toggle('fa-play');">
+                                    <i class="fas fa-play" style="margin-left:1px;"></i>
+                                </button>
+                                <span>小幸运 - 田馥甄</span>
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    <span class="tag tag-pink" style="font-size:11px;">情人节惊喜</span>
+                                    <button class="btn-music-chapter" data-index="1" style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;color:#666;cursor:pointer;">设置</button>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td class="flex items-center gap-3">
+                                <button class="play-btn" onclick="this.querySelector('i').classList.toggle('fa-pause');this.querySelector('i').classList.toggle('fa-play');">
+                                    <i class="fas fa-play" style="margin-left:1px;"></i>
+                                </button>
+                                <span>春风十里 - 鹿先森乐队</span>
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    <span class="tag tag-pink" style="font-size:11px;">春日踏青</span>
+                                    <button class="btn-music-chapter" data-index="2" style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;color:#666;cursor:pointer;">设置</button>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td class="flex items-center gap-3">
+                                <button class="play-btn" onclick="this.querySelector('i').classList.toggle('fa-pause');this.querySelector('i').classList.toggle('fa-play');">
+                                    <i class="fas fa-play" style="margin-left:1px;"></i>
+                                </button>
+                                <span>告白气球 - 周杰伦</span>
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    <span class="tag tag-pink" style="font-size:11px;">全部章节</span>
+                                    <button class="btn-music-chapter" data-index="3" style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;color:#666;cursor:pointer;">设置</button>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td class="flex items-center gap-3">
+                                <button class="play-btn" onclick="this.querySelector('i').classList.toggle('fa-pause');this.querySelector('i').classList.toggle('fa-play');">
+                                    <i class="fas fa-play" style="margin-left:1px;"></i>
+                                </button>
+                                <span>新年好 - 传统民谣</span>
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    <span class="tag tag-pink" style="font-size:11px;">冬日温暖</span>
+                                    <button class="btn-music-chapter" data-index="4" style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;color:#666;cursor:pointer;">设置</button>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== 页面7：评论管理 ==================== -->
+        <div class="admin-page" id="admin-comments">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-bold text-gray-800">评论管理</h1>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="flex gap-4 mb-6">
+                <select class="setting-input" style="width:180px;">
+                    <option>全部章节</option>
+                    <option>春日踏青</option>
+                    <option>情人节</option>
+                    <option>周末时光</option>
+                    <option>新年快乐</option>
+                </select>
+                <select class="setting-input" style="width:180px;">
+                    <option>全部用户</option>
+                    <option>老公</option>
+                    <option>老婆</option>
+                </select>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="flex flex-col gap-4 mb-6">
+                <!-- 评论1 -->
+                <div class="comment-item">
+                    <div class="user-avatar-circle" style="width:42px;height:42px;font-size:16px;background:linear-gradient(135deg,#EC407A,#E91E63);flex-shrink:0;">老</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-3">
+                                <span class="font-semibold text-gray-800 text-sm">老公</span>
+                                <span class="tag tag-pink">春日踏青</span>
+                            </div>
+                            <span class="text-xs text-gray-400">2024-03-20 11:30</span>
+                        </div>
+                        <p class="text-sm text-gray-600">这次踏青真的很开心，天气也特别好！</p>
+                        <div class="mt-2">
+                            <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 评论2 -->
+                <div class="comment-item">
+                    <div class="user-avatar-circle" style="width:42px;height:42px;font-size:16px;background:linear-gradient(135deg,#42A5F5,#1E88E5);flex-shrink:0;">老</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-3">
+                                <span class="font-semibold text-gray-800 text-sm">老婆</span>
+                                <span class="tag tag-pink">情人节</span>
+                            </div>
+                            <span class="text-xs text-gray-400">2024-03-20 11:15</span>
+                        </div>
+                        <p class="text-sm text-gray-600">好甜呀~每年的情人节都这么浪漫！</p>
+                        <div class="mt-2">
+                            <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 评论3 -->
+                <div class="comment-item">
+                    <div class="user-avatar-circle" style="width:42px;height:42px;font-size:16px;background:linear-gradient(135deg,#EC407A,#E91E63);flex-shrink:0;">老</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-3">
+                                <span class="font-semibold text-gray-800 text-sm">老公</span>
+                                <span class="tag tag-blue">周末时光</span>
+                            </div>
+                            <span class="text-xs text-gray-400">2024-03-19 20:30</span>
+                        </div>
+                        <p class="text-sm text-gray-600">周末在家做饭的视频拍得不错，下次再拍一个教程版的！</p>
+                        <div class="mt-2">
+                            <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 评论4 -->
+                <div class="comment-item">
+                    <div class="user-avatar-circle" style="width:42px;height:42px;font-size:16px;background:linear-gradient(135deg,#42A5F5,#1E88E5);flex-shrink:0;">老</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-3">
+                                <span class="font-semibold text-gray-800 text-sm">老婆</span>
+                                <span class="tag tag-orange">新年快乐</span>
+                            </div>
+                            <span class="text-xs text-gray-400">2024-03-18 15:20</span>
+                        </div>
+                        <p class="text-sm text-gray-600">新年的烟花好美啊，明年我们还要一起看！</p>
+                        <div class="mt-2">
+                            <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 评论5 -->
+                <div class="comment-item">
+                    <div class="user-avatar-circle" style="width:42px;height:42px;font-size:16px;background:linear-gradient(135deg,#EC407A,#E91E63);flex-shrink:0;">老</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-3">
+                                <span class="font-semibold text-gray-800 text-sm">老公</span>
+                                <span class="tag tag-pink">春日踏青</span>
+                            </div>
+                            <span class="text-xs text-gray-400">2024-03-17 09:45</span>
+                        </div>
+                        <p class="text-sm text-gray-600">樱花树下的那张照片拍得真好看，要设为封面！</p>
+                        <div class="mt-2">
+                            <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 评论6 -->
+                <div class="comment-item">
+                    <div class="user-avatar-circle" style="width:42px;height:42px;font-size:16px;background:linear-gradient(135deg,#42A5F5,#1E88E5);flex-shrink:0;">老</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-3">
+                                <span class="font-semibold text-gray-800 text-sm">老婆</span>
+                                <span class="tag tag-blue">周末时光</span>
+                            </div>
+                            <span class="text-xs text-gray-400">2024-03-16 18:10</span>
+                        </div>
+                        <p class="text-sm text-gray-600">这个周末过得好充实，下次再去那个咖啡馆！</p>
+                        <div class="mt-2">
+                            <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分页器 -->
+            <div class="flex justify-center">
+                <div class="pagination">
+                    <button><i class="fas fa-chevron-left"></i></button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button>...</button>
+                    <button>12</button>
+                    <button><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 页面8：用户管理 ==================== -->
+        <div class="admin-page" id="admin-users">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-bold text-gray-800">用户管理</h1>
+                <button class="btn-primary" onclick="alert('新建用户')">
+                    <i class="fas fa-user-plus"></i> 新建用户
+                </button>
+            </div>
+
+            <!-- 用户卡片网格 -->
+            <div class="grid grid-cols-3 gap-6">
+                <!-- 用户1 -->
+                <div class="user-card">
+                    <div class="user-avatar-circle" style="background:linear-gradient(135deg,#EC407A,#E91E63);">老</div>
+                    <h3 class="font-semibold text-gray-800 mb-1">老公</h3>
+                    <span class="tag tag-pink mb-3 inline-block">管理员</span>
+                    <div class="text-left text-sm text-gray-500 mt-3 space-y-2">
+                        <div class="flex justify-between">
+                            <span>注册时间</span>
+                            <span class="text-gray-700">2024-01-01</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>最后活跃</span>
+                            <span class="text-gray-700">2小时前</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4 justify-center">
+                        <button class="btn-outline btn-sm"><i class="fas fa-edit"></i> 编辑</button>
+                    </div>
+                </div>
+                <!-- 用户2 -->
+                <div class="user-card">
+                    <div class="user-avatar-circle" style="background:linear-gradient(135deg,#42A5F5,#1E88E5);">老</div>
+                    <h3 class="font-semibold text-gray-800 mb-1">老婆</h3>
+                    <span class="tag tag-pink mb-3 inline-block">管理员</span>
+                    <div class="text-left text-sm text-gray-500 mt-3 space-y-2">
+                        <div class="flex justify-between">
+                            <span>注册时间</span>
+                            <span class="text-gray-700">2024-01-01</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>最后活跃</span>
+                            <span class="text-gray-700">30分钟前</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4 justify-center">
+                        <button class="btn-outline btn-sm"><i class="fas fa-edit"></i> 编辑</button>
+                    </div>
+                </div>
+                <!-- 用户3 -->
+                <div class="user-card">
+                    <div class="user-avatar-circle" style="background:linear-gradient(135deg,#66BB6A,#43A047);">爸</div>
+                    <h3 class="font-semibold text-gray-800 mb-1">爸爸</h3>
+                    <span class="tag tag-blue mb-3 inline-block">浏览者</span>
+                    <div class="text-left text-sm text-gray-500 mt-3 space-y-2">
+                        <div class="flex justify-between">
+                            <span>注册时间</span>
+                            <span class="text-gray-700">2024-02-10</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>最后活跃</span>
+                            <span class="text-gray-700">3天前</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4 justify-center">
+                        <button class="btn-outline btn-sm"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-ban"></i> 禁用</button>
+                    </div>
+                </div>
+                <!-- 用户4 -->
+                <div class="user-card">
+                    <div class="user-avatar-circle" style="background:linear-gradient(135deg,#AB47BC,#8E24AA);">妈</div>
+                    <h3 class="font-semibold text-gray-800 mb-1">妈妈</h3>
+                    <span class="tag tag-blue mb-3 inline-block">浏览者</span>
+                    <div class="text-left text-sm text-gray-500 mt-3 space-y-2">
+                        <div class="flex justify-between">
+                            <span>注册时间</span>
+                            <span class="text-gray-700">2024-02-10</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>最后活跃</span>
+                            <span class="text-gray-700">1天前</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4 justify-center">
+                        <button class="btn-outline btn-sm"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-ban"></i> 禁用</button>
+                    </div>
+                </div>
+                <!-- 用户5 -->
+                <div class="user-card">
+                    <div class="user-avatar-circle" style="background:linear-gradient(135deg,#FFA726,#FB8C00);">宝</div>
+                    <h3 class="font-semibold text-gray-800 mb-1">宝贝</h3>
+                    <span class="tag tag-blue mb-3 inline-block">浏览者</span>
+                    <div class="text-left text-sm text-gray-500 mt-3 space-y-2">
+                        <div class="flex justify-between">
+                            <span>注册时间</span>
+                            <span class="text-gray-700">2024-03-01</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>最后活跃</span>
+                            <span class="text-gray-700">5天前</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4 justify-center">
+                        <button class="btn-outline btn-sm"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="btn-outline btn-sm" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-ban"></i> 禁用</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 页面9：系统设置 ==================== -->
+        <div class="admin-page" id="admin-settings">
+            <h1 class="text-xl font-bold text-gray-800 mb-6">系统设置</h1>
+
+            <!-- 基本设置 -->
+            <div class="settings-group">
+                <h3><i class="fas fa-sliders-h text-pink-500 mr-2"></i>基本设置</h3>
+                <div class="setting-row">
+                    <span class="setting-label">站点标题</span>
+                    <input type="text" class="setting-input" value="我们的照片回忆录" placeholder="请输入站点标题">
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">照片根目录</span>
+                    <div class="flex gap-2">
+                        <input type="text" class="setting-input" value="/home/photos/memories" placeholder="照片存储路径">
+                        <button class="btn-outline btn-sm"><i class="fas fa-folder-open"></i> 浏览</button>
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">视频根目录</span>
+                    <div class="flex gap-2">
+                        <input type="text" class="setting-input" value="/home/videos/memories" placeholder="视频存储路径">
+                        <button class="btn-outline btn-sm"><i class="fas fa-folder-open"></i> 浏览</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 互动效果 -->
+            <div class="settings-group">
+                <h3><i class="fas fa-magic text-purple-500 mr-2"></i>互动效果</h3>
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label">爱心飘落效果</span>
+                        <p class="text-xs text-gray-400 mt-1">双击页面时飘落爱心动画</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label">打字机效果</span>
+                        <p class="text-xs text-gray-400 mt-1">章节标题逐字显示动画</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label">页面过渡动画</span>
+                        <p class="text-xs text-gray-400 mt-1">章节切换时的过渡效果</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 数据管理 -->
+            <div class="settings-group">
+                <h3><i class="fas fa-database text-blue-500 mr-2"></i>数据管理</h3>
+                <div class="setting-row">
+                    <span class="setting-label">备份当前数据</span>
+                    <button class="btn-primary btn-sm" onclick="alert('正在备份数据...')">
+                        <i class="fas fa-download"></i> 备份数据
+                    </button>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">从备份恢复</span>
+                    <div class="flex gap-2 items-center">
+                        <input type="file" class="hidden" id="restoreFile">
+                        <button class="btn-outline btn-sm" onclick="document.getElementById('restoreFile').click()">
+                            <i class="fas fa-upload"></i> 选择文件
+                        </button>
+                        <span class="text-sm text-gray-400" id="restoreFileName">未选择文件</span>
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label">重新扫描所有文件夹</span>
+                        <p class="text-xs text-gray-400 mt-1">重新扫描照片和视频目录，更新数据库</p>
+                    </div>
+                    <button class="btn-danger btn-sm" onclick="doScanFolders()">
+                        <i class="fas fa-sync-alt"></i> 重新扫描
+                    </button>
+                </div>
+            </div>
+
+            <!-- 保存按钮 -->
+            <div class="flex justify-end mt-2">
+                <button class="btn-primary" style="padding:12px 40px;font-size:15px;" onclick="alert('设置已保存！')">
+                    <i class="fas fa-save"></i> 保存设置
+                </button>
+            </div>
+        </div>
+
+    </div><!-- /page-content -->
+</div><!-- /main-content -->
+
+<!-- ==================== JavaScript ==================== -->
+<!-- 新建章节弹窗 -->
+<div class="modal-overlay" id="newChapterModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:9998;">
+    <div style="background:#fff;border-radius:16px;padding:32px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+            <h3 style="margin:0;font-size:18px;color:#333;">新建章节</h3>
+            <button onclick="document.getElementById('newChapterModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:14px;color:#666;margin-bottom:6px;">章节标题</label>
+            <input type="text" id="newChapterTitle" placeholder="例如：春日踏青" style="width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;" onfocus="this.style.borderColor='#E91E63'" onblur="this.style.borderColor='#ddd'">
+        </div>
+        <div style="margin-bottom:24px;">
+            <label style="display:block;font-size:14px;color:#666;margin-bottom:6px;">回忆日期</label>
+            <input type="date" id="newChapterDate" style="width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;" onfocus="this.style.borderColor='#E91E63'" onblur="this.style.borderColor='#ddd'">
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button onclick="document.getElementById('newChapterModal').style.display='none'" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#666;cursor:pointer;font-size:14px;">取消</button>
+            <button onclick="createChapter()" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#E91E63,#FF5252);color:#fff;cursor:pointer;font-size:14px;">创建章节</button>
+        </div>
+    </div>
+</div>
+
+<!-- 上传弹窗 -->
+<div class="modal-overlay" id="uploadModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:9998;">
+    <div style="background:#fff;border-radius:16px;padding:32px;width:520px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+            <h3 id="uploadModalTitle" style="margin:0;font-size:18px;color:#333;">上传图片</h3>
+            <button onclick="document.getElementById('uploadModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:14px;color:#666;margin-bottom:6px;">目标章节</label>
+            <select id="uploadTargetChapter" style="width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+                <option value="">请选择章节</option>
+                <option value="1">春日踏青 (2024-03-15)</option>
+                <option value="2">情人节惊喜 (2024-02-14)</option>
+                <option value="3">夏日回忆 (2024-07-20)</option>
+                <option value="4">秋日私语 (2024-10-05)</option>
+            </select>
+        </div>
+        <div id="uploadDropZone" style="border:2px dashed #ddd;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;" onmouseover="this.style.borderColor='#E91E63';this.style.background='#FFF5F7'" onmouseout="this.style.borderColor='#ddd';this.style.background='#fff'" onclick="document.getElementById('uploadFileInput').click()">
+            <i class="fas fa-cloud-upload-alt" style="font-size:36px;color:#E91E63;margin-bottom:12px;display:block;"></i>
+            <p style="margin:0 0 4px;color:#333;font-size:14px;">拖拽文件到此处或点击上传</p>
+            <p id="uploadHint" style="margin:0;color:#999;font-size:12px;">支持 JPG、PNG、GIF 格式</p>
+            <input type="file" id="uploadFileInput" multiple style="display:none;" onchange="handleFileSelect(this)">
+        </div>
+        <div id="uploadFileList" style="margin-top:12px;max-height:120px;overflow-y:auto;"></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+            <button onclick="document.getElementById('uploadModal').style.display='none'" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#666;cursor:pointer;font-size:14px;">取消</button>
+            <button onclick="doUpload()" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#E91E63,#FF5252);color:#fff;cursor:pointer;font-size:14px;">开始上传</button>
+        </div>
+    </div>
+</div>
+
+<!-- 音乐关联章节弹窗 -->
+<div class="modal-overlay" id="musicChapterModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:9998;">
+    <div style="background:#fff;border-radius:16px;padding:32px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="margin:0;font-size:18px;color:#333;">设置关联章节</h3>
+            <button onclick="document.getElementById('musicChapterModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#FFF5F7;border-radius:8px;cursor:pointer;font-size:14px;color:#E91E63;font-weight:500;">
+                <input type="checkbox" id="musicChapterSelectAll" style="accent-color:#E91E63;width:16px;height:16px;">
+                <span>全选</span>
+            </label>
+        </div>
+        <div id="musicChapterList" style="max-height:240px;overflow-y:auto;">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:14px;">
+                <input type="checkbox" class="music-chapter-cb" value="春日踏青" style="accent-color:#E91E63;width:16px;height:16px;">
+                <span>春日踏青</span>
+                <span style="margin-left:auto;color:#999;font-size:12px;">2024-03-15</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:14px;">
+                <input type="checkbox" class="music-chapter-cb" value="情人节惊喜" style="accent-color:#E91E63;width:16px;height:16px;">
+                <span>情人节惊喜</span>
+                <span style="margin-left:auto;color:#999;font-size:12px;">2024-02-14</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:14px;">
+                <input type="checkbox" class="music-chapter-cb" value="夏日回忆" style="accent-color:#E91E63;width:16px;height:16px;">
+                <span>夏日回忆</span>
+                <span style="margin-left:auto;color:#999;font-size:12px;">2024-07-20</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:14px;">
+                <input type="checkbox" class="music-chapter-cb" value="秋日私语" style="accent-color:#E91E63;width:16px;height:16px;">
+                <span>秋日私语</span>
+                <span style="margin-left:auto;color:#999;font-size:12px;">2024-10-05</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;font-size:14px;">
+                <input type="checkbox" class="music-chapter-cb" value="冬日温暖" style="accent-color:#E91E63;width:16px;height:16px;">
+                <span>冬日温暖</span>
+                <span style="margin-left:auto;color:#999;font-size:12px;">2024-12-25</span>
+            </label>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+            <button onclick="document.getElementById('musicChapterModal').style.display='none'" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#666;cursor:pointer;font-size:14px;">取消</button>
+            <button onclick="saveMusicChapters()" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#E91E63,#FF5252);color:#fff;cursor:pointer;font-size:14px;">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 图片灯箱 -->
+<div class="lightbox-overlay" id="lightboxOverlay">
+    <button class="lightbox-close" id="lightboxClose"><i class="fas fa-times"></i></button>
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev"><i class="fas fa-chevron-left"></i></button>
+    <img id="lightboxImg" src="" alt="">
+    <button class="lightbox-nav lightbox-next" id="lightboxNext"><i class="fas fa-chevron-right"></i></button>
+    <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
+<!-- 视频播放器 -->
+<div class="video-player-overlay" id="videoPlayerOverlay">
+    <div class="video-player-modal">
+        <div class="video-player-header">
+            <h3 id="videoPlayerTitle">视频播放</h3>
+            <button class="video-player-close" id="videoPlayerClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="video-player-screen">
+            <img id="videoPlayerThumb" src="" alt="">
+            <button class="video-player-play-btn" id="videoPlayerPlayBtn"><i class="fas fa-play" style="margin-left:3px;"></i></button>
+        </div>
+        <div class="video-player-controls">
+            <div class="video-progress" id="videoProgress">
+                <div class="video-progress-bar" id="videoProgressBar"></div>
+            </div>
+            <div class="video-controls-row">
+                <div class="video-controls-left">
+                    <button class="video-ctrl-btn" id="videoCtrlPlay"><i class="fas fa-play"></i></button>
+                    <span class="video-time"><span id="videoCurrentTime">0:00</span> / <span id="videoTotalTime">2:35</span></span>
+                </div>
+                <div class="video-controls-right">
+                    <button class="video-ctrl-btn"><i class="fas fa-volume-up"></i></button>
+                    <button class="video-ctrl-btn"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '';
+
+    async function apiGet(url) {
+      try { const r = await fetch(API_BASE + url); return await r.json(); }
+      catch(e) { console.warn('[GET]', url, e); return null; }
+    }
+    async function apiPost(url, data) {
+      try { const r = await fetch(API_BASE + url, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }); return await r.json(); }
+      catch(e) { console.warn('[POST]', url, e); return null; }
+    }
+    async function apiPut(url, data) {
+      try { const r = await fetch(API_BASE + url, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }); return await r.json(); }
+      catch(e) { console.warn('[PUT]', url, e); return null; }
+    }
+    async function apiDelete(url) {
+      try { const r = await fetch(API_BASE + url, { method: 'DELETE' }); return await r.json(); }
+      catch(e) { console.warn('[DELETE]', url, e); return null; }
+    }
+
+    async function apiPostForm(url, formData) {
+      try { const r = await fetch(API_BASE + url, { method: 'POST', body: formData }); return await r.json(); }
+      catch(e) { console.warn('[POST FORM]', url, e); return null; }
+    }
+
+    async function loadDashboard() {
+      const stats = await apiGet('/api/admin/dashboard');
+      if (stats) {
+        const map = {photo_count:0, video_count:1, chapter_count:2, comment_count:3, user_count:4};
+        document.querySelectorAll('.stat-card').forEach((card, i) => {
+          const h3 = card.querySelector('h3');
+          if (h3 && i < 5) h3.textContent = Object.values(stats)[i] || 0;
+        });
+      }
+    }
+
+    async function loadAdminChapters() {
+      const chapters = await apiGet('/api/admin/chapters');
+      if (!chapters || !chapters.length) return;
+      const grid = document.querySelector('#admin-chapters .grid.grid-cols-2');
+      if (!grid) return;
+      grid.innerHTML = '';
+      chapters.forEach(ch => {
+        grid.innerHTML += `
+          <div class="chapter-card" data-id="${ch.id}">
+            <img src="https://picsum.photos/seed/${ch.title}/600/360" alt="${ch.title}">
+            <div class="p-5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="tag tag-pink chapter-date-tag" data-start="${ch.date_start}" data-end="${ch.date_end||''}">${ch.date_display}</span>
+                <label class="toggle-switch"><input type="checkbox" ${ch.is_enabled?'checked':''}><span class="toggle-slider"></span></label>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">${ch.title}</h3>
+              <div class="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                <span><i class="fas fa-image mr-1"></i> ${ch.photo_count||0} 张照片</span>
+                <span><i class="fas fa-video mr-1"></i> ${ch.video_count||0} 个视频</span>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn-outline btn-sm btn-chapter-edit"><i class="fas fa-edit"></i> 编辑</button>
+                <button class="btn-outline btn-sm btn-chapter-delete" style="color:#FF5252;border-color:#FF5252;"><i class="fas fa-trash"></i> 删除</button>
+              </div>
+            </div>
+          </div>`;
+      });
+      bindChapterEvents();
+    }
+
+    function bindChapterEvents() {
+      document.querySelectorAll('.btn-chapter-edit').forEach(btn => {
+        btn.onclick = function() { /* handled by existing dynamic code */ };
+      });
+      document.querySelectorAll('.btn-chapter-delete').forEach(btn => {
+        btn.onclick = async function() {
+          var card = this.closest('.chapter-card');
+          var title = card ? card.querySelector('h3')?.textContent.trim() : '';
+          var chId = card?.getAttribute('data-id');
+          if (!confirm('确定要删除章节"' + title + '"吗？')) return;
+          if (chId) { await apiDelete('/api/admin/chapters/' + chId); showToast('已删除章节：' + title); }
+          card.style.transition = 'opacity 0.3s'; card.style.opacity = '0';
+          setTimeout(() => card?.remove(), 300);
+        };
+      });
+    }
+
+    async function populateChapterSelects() {
+      const chapters = await apiGet('/api/admin/chapters');
+      if (!chapters || !chapters.length) return;
+      const options = '<option value="">请选择章节</option>' +
+        chapters.map(ch => `<option value="${ch.id}">${ch.title} (${ch.date_start})</option>`).join('');
+      document.querySelectorAll('#uploadTargetChapter').forEach(el => el.innerHTML = options);
+      const photoSelect = document.querySelector('#admin-photos .setting-input[style*="width:200px"]');
+      if (photoSelect && photoSelect.tagName === 'SELECT') photoSelect.innerHTML = '<option value="0">全部章节</option>' +
+        chapters.map(ch => `<option value="${ch.id}">${ch.title}</option>`).join('');
+      const videoSelect = document.querySelector('#admin-videos .setting-input[style*="width:200px"]');
+      if (videoSelect && videoSelect.tagName === 'SELECT') videoSelect.innerHTML = '<option value="0">全部章节</option>' +
+        chapters.map(ch => `<option value="${ch.title}">${ch.title}</option>`).join('');
+    }
+
+    async function loadAdminPhotos(chapterId) {
+      const url = chapterId ? '/api/admin/photos?chapter_id=' + chapterId : '/api/admin/photos';
+      const photos = await apiGet(url);
+      const gridContainer = document.querySelector('#admin-photos .grid.grid-cols-4');
+      if (!gridContainer) return;
+      gridContainer.innerHTML = '';
+      if (!photos || photos.length === 0) {
+        gridContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#999;"><i class="fas fa-image text-4xl mb-3" style="display:block;"></i><p>暂无照片，请上传或扫描文件夹</p></div>';
+        return;
+      }
+      photos.forEach(p => {
+        const thumbUrl = p.thumbnail_path ? ('/api/photos/' + p.id + '/thumb') : ('https://picsum.photos/seed/photo' + p.id + '/400/300');
+        gridContainer.innerHTML += `
+          <div class="photo-grid-item" data-id="${p.id}" data-filename="${p.file_name}">
+            <div class="relative">
+              <img src="${thumbUrl}" alt="${p.file_name}" style="height:160px;">
+              <input type="checkbox" class="photo-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+              <div class="photo-overlay">
+                <button class="btn-sm btn-photo-preview" onclick="window.open('/api/photos/${p.id}/file','_blank')" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                <button class="btn-sm btn-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                <button class="btn-sm btn-photo-delete-single" data-id="${p.id}" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="p-3">
+              <p class="text-sm font-medium text-gray-700 truncate photo-filename">${p.file_name}</p>
+            </div>
+          </div>`;
+      });
+      bindPhotoGridEvents();
+    }
+
+    async function loadAdminVideos(chapterId) {
+      const url = chapterId ? '/api/admin/videos?chapter_id=' + chapterId : '/api/admin/videos';
+      const videos = await apiGet(url);
+      const gridContainer = document.querySelector('#admin-videos .grid.grid-cols-4');
+      if (!gridContainer) return;
+      gridContainer.innerHTML = '';
+      if (!videos || videos.length === 0) {
+        gridContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#999;"><i class="fas fa-video text-4xl mb-3" style="display:block;"></i><p>暂无视频，请上传或扫描文件夹</p></div>';
+        return;
+      }
+      videos.forEach(v => {
+        const thumbUrl = v.thumbnail_path ? ('/api/videos/' + v.id + '/thumb') : ('https://picsum.photos/seed/video' + v.id + '/400/250');
+        const sizeMB = (v.file_size / 1024 / 1024).toFixed(1);
+        gridContainer.innerHTML += `
+          <div class="chapter-card" data-id="${v.id}" data-filename="${v.file_name}">
+            <div class="relative">
+              <img src="${thumbUrl}" alt="${v.file_name}" style="height:160px;">
+              ${v.duration ? '<span class="video-duration">' + v.duration + '</span>' : ''}
+              <input type="checkbox" class="video-checkbox" style="position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:#E91E63;z-index:15;cursor:pointer;">
+              <div class="video-card-overlay">
+                <button class="btn-sm btn-video-play" onclick="window.open('/api/videos/${v.id}/file','_blank')" style="background:rgba(255,255,255,0.9);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="播放"><i class="fas fa-play"></i></button>
+                <button class="btn-sm btn-video-rename-single" style="background:rgba(233,30,99,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" title="重命名"><i class="fas fa-pen"></i></button>
+                <button class="btn-sm btn-video-delete-single" data-id="${v.id}" style="background:rgba(255,82,82,0.9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="p-4">
+              <p class="text-sm font-medium text-gray-700 truncate video-filename">${v.file_name}</p>
+              <p class="text-xs text-gray-400 mt-1">${sizeMB} MB</p>
+            </div>
+          </div>`;
+      });
+      bindVideoGridEvents();
+    }
+
+    function bindPhotoGridEvents() {
+      document.querySelectorAll('#admin-photos .btn-rename-single').forEach(btn => {
+        btn.onclick = function() { openRenameModal(this.closest('.photo-grid-item')); };
+      });
+      document.querySelectorAll('#admin-photos .btn-photo-delete-single').forEach(async btn => {
+        btn.onclick = async function() {
+          const id = this.getAttribute('data-id');
+          if (!id) return;
+          if (!confirm('确定删除这张照片吗？')) return;
+          await apiDelete('/api/admin/photos/' + id);
+          const item = this.closest('.photo-grid-item');
+          item.style.transition = 'opacity 0.3s'; item.style.opacity = '0';
+          setTimeout(() => item.remove(), 300);
+          showToast('已删除照片');
+        };
+      });
+    }
+
+    function bindVideoGridEvents() {
+      document.querySelectorAll('#admin-videos .btn-video-rename-single').forEach(btn => {
+        btn.onclick = function() { openVideoRenameModal(this.closest('.chapter-card')); };
+      });
+      document.querySelectorAll('#admin-videos .btn-video-delete-single').forEach(async btn => {
+        btn.onclick = async function() {
+          const id = this.getAttribute('data-id');
+          if (!id) return;
+          if (!confirm('确定删除这个视频吗？')) return;
+          await apiDelete('/api/admin/videos/' + id);
+          const item = this.closest('.chapter-card');
+          item.style.transition = 'opacity 0.3s'; item.style.opacity = '0';
+          setTimeout(() => item.remove(), 300);
+          showToast('已删除视频');
+        };
+      });
+    }
+    /**
+     * 页面名称映射表
+     * 用于更新面包屑导航文本
+     */
+    const pageNames = {
+        'admin-dashboard': '仪表盘',
+        'admin-chapters': '章节管理',
+        'admin-photos': '图片管理',
+        'admin-videos': '视频管理',
+        'admin-editor': '文章编辑',
+        'admin-music': '音乐管理',
+        'admin-comments': '评论管理',
+        'admin-users': '用户管理',
+        'admin-settings': '系统设置'
+    };
+
+    /**
+     * 切换页面
+     * @param {string} pageId - 目标页面的 ID
+     * @param {HTMLElement} navEl - 点击的导航元素
+     */
+    function switchPage(pageId, navEl) {
+        // 隐藏所有页面
+        document.querySelectorAll('.admin-page').forEach(function(page) {
+            page.classList.remove('active');
+        });
+        // 取消所有导航项的激活状态
+        document.querySelectorAll('.nav-item').forEach(function(item) {
+            item.classList.remove('active');
+        });
+        // 显示目标页面
+        var targetPage = document.getElementById(pageId);
+        if (targetPage) {
+            targetPage.classList.add('active');
+        }
+        // 激活导航项
+        if (navEl) {
+            navEl.classList.add('active');
+        }
+        // 更新面包屑
+        var breadcrumbText = document.getElementById('breadcrumb-text');
+        if (breadcrumbText && pageNames[pageId]) {
+            breadcrumbText.textContent = pageNames[pageId];
+        }
+    }
+
+    /**
+     * 上传区域拖拽效果
+     */
+    document.querySelectorAll('.upload-zone').forEach(function(zone) {
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            zone.classList.add('dragover');
+        });
+        zone.addEventListener('dragleave', function() {
+            zone.classList.remove('dragover');
+        });
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            alert('文件已上传（模拟）');
+        });
+        zone.addEventListener('click', function() {
+            alert('选择文件上传（模拟）');
+        });
+    });
+
+    /**
+     * 图片复选框计数
+     */
+    document.querySelectorAll('#admin-photos .photo-checkbox').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var checked = document.querySelectorAll('#admin-photos .photo-checkbox:checked').length;
+            var countEl = document.querySelector('#admin-photos .batch-bar strong');
+            if (countEl) {
+                countEl.textContent = checked;
+            }
+            var batchBar = document.querySelector('#admin-photos .batch-bar');
+            if (batchBar) {
+                batchBar.style.display = checked > 0 ? 'flex' : 'none';
+            }
+        });
+    });
+
+    // 通用：重置批量操作状态（取消勾选 + 隐藏操作栏）
+    function resetBatchBar(sectionSelector) {
+        document.querySelectorAll(sectionSelector + ' input[type="checkbox"]:checked, ' + sectionSelector + ' .video-checkbox:checked').forEach(function(cb) {
+            cb.checked = false;
+        });
+        var batchBar = document.querySelector(sectionSelector + ' .batch-bar');
+        if (batchBar) batchBar.style.display = 'none';
+        var countEl = document.querySelector(sectionSelector + ' .batch-bar strong');
+        if (countEl) countEl.textContent = '0';
+    }
+
+    /**
+     * 恢复文件选择后更新文件名显示
+     */
+    var restoreFileInput = document.getElementById('restoreFile');
+    if (restoreFileInput) {
+        restoreFileInput.addEventListener('change', function() {
+            var fileNameEl = document.getElementById('restoreFileName');
+            if (fileNameEl && this.files.length > 0) {
+                fileNameEl.textContent = this.files[0].name;
+                fileNameEl.style.color = '#333';
+            }
+        });
+    }
+
+    /**
+     * ========== 重命名功能 ==========
+     */
+
+    // Toast 通知函数
+    function showToast(message, icon) {
+        icon = icon || 'fa-check-circle';
+        var container = document.getElementById('toastContainer');
+        var toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = '<i class="fas ' + icon + '"></i><span>' + message + '</span>';
+        container.appendChild(toast);
+        setTimeout(function() {
+            toast.classList.add('toast-out');
+            setTimeout(function() {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+
+    // 获取所有图片文件名
+    function getAllFilenames() {
+        var items = document.querySelectorAll('#admin-photos .photo-grid-item');
+        var names = [];
+        items.forEach(function(item) {
+            var nameEl = item.querySelector('.photo-filename');
+            if (nameEl) names.push(nameEl.textContent.trim());
+        });
+        return names;
+    }
+
+    // 获取文件名和扩展名
+    function splitFilename(filename) {
+        var lastDot = filename.lastIndexOf('.');
+        if (lastDot === -1) return { name: filename, ext: '' };
+        return { name: filename.substring(0, lastDot), ext: filename.substring(lastDot) };
+    }
+
+    // 当前正在重命名的图片元素
+    var currentRenameItem = null;
+
+    // 打开单张重命名弹窗
+    function openRenameModal(gridItem) {
+        currentRenameItem = gridItem;
+        var filenameEl = gridItem.querySelector('.photo-filename');
+        if (!filenameEl) return;
+        var filename = filenameEl.textContent.trim();
+        var parts = splitFilename(filename);
+
+        document.getElementById('renameCurrentName').textContent = filename;
+        document.getElementById('renameNewName').value = parts.name;
+        document.getElementById('renameExt').textContent = parts.ext;
+        document.getElementById('renamePreviewName').textContent = filename;
+        document.getElementById('renameConflict').style.display = 'none';
+
+        document.getElementById('renameModalOverlay').classList.add('active');
+        setTimeout(function() {
+            document.getElementById('renameNewName').focus();
+            document.getElementById('renameNewName').select();
+        }, 100);
+    }
+
+    // 关闭单张重命名弹窗
+    function closeRenameModal() {
+        document.getElementById('renameModalOverlay').classList.remove('active');
+        currentRenameItem = null;
+    }
+
+    // 单张重命名 - 实时预览和冲突检测
+    document.getElementById('renameNewName').addEventListener('input', function() {
+        var newName = this.value.trim();
+        var ext = document.getElementById('renameExt').textContent;
+        var preview = newName + ext;
+        document.getElementById('renamePreviewName').textContent = preview || '-';
+
+        // 冲突检测
+        var allNames = getAllFilenames();
+        var currentName = currentRenameItem ? currentRenameItem.querySelector('.photo-filename').textContent.trim() : '';
+        var conflict = false;
+        if (newName && (newName + ext) !== currentName) {
+            for (var i = 0; i < allNames.length; i++) {
+                if (allNames[i].toLowerCase() === (newName + ext).toLowerCase()) {
+                    conflict = true;
+                    break;
+                }
+            }
+        }
+        document.getElementById('renameConflict').style.display = conflict ? 'flex' : 'none';
+    });
+
+    // 单张重命名 - 确认
+    document.getElementById('renameConfirmBtn').addEventListener('click', async function() {
+        var newName = document.getElementById('renameNewName').value.trim();
+        var ext = document.getElementById('renameExt').textContent;
+        if (!newName) { showToast('文件名不能为空', 'fa-exclamation-circle'); return; }
+        var conflictEl = document.getElementById('renameConflict');
+        if (conflictEl.style.display !== 'none') { showToast('文件名冲突，请修改后重试', 'fa-exclamation-circle'); return; }
+        if (currentRenameItem) {
+            var photoId = currentRenameItem.getAttribute('data-id');
+            const result = await apiPut('/api/admin/photos/' + photoId, { file_name: newName + ext });
+            if (result && result.ok) {
+                var filenameEl = currentRenameItem.querySelector('.photo-filename');
+                if (filenameEl) filenameEl.textContent = result.new_name || (newName + ext);
+                closeRenameModal();
+                showToast('重命名成功');
+            } else {
+                showToast(result?.error || '重命名失败', 'fa-exclamation-circle');
+            }
+        }
+    });
+
+    // 单张重命名 - 取消/关闭
+    document.getElementById('renameCancelBtn').addEventListener('click', closeRenameModal);
+    document.getElementById('renameModalClose').addEventListener('click', closeRenameModal);
+    document.getElementById('renameModalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeRenameModal();
+    });
+
+    // 绑定单张重命名按钮事件
+    document.querySelectorAll('.btn-rename-single').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var gridItem = this.closest('.photo-grid-item');
+            if (gridItem) openRenameModal(gridItem);
+        });
+    });
+
+    // ========== 批量重命名 ==========
+
+    // 模拟章节信息
+    var chapterInfo = {
+        date: '20240315',
+        title: '春日踏青'
+    };
+
+    // 根据模板生成新文件名
+    function generateBatchName(template, index, origFilename) {
+        var origParts = splitFilename(origFilename);
+        var idx = String(index + 1).padStart(3, '0');
+        var result = template
+            .replace(/\{chapter_date\}/g, chapterInfo.date)
+            .replace(/\{chapter_title\}/g, chapterInfo.title)
+            .replace(/\{index\}/g, idx);
+        return result + origParts.ext;
+    }
+
+    // 更新批量重命名预览
+    function updateBatchPreview() {
+        var template = document.getElementById('batchRenameTemplate').value;
+        var allItems = document.querySelectorAll('#admin-photos .photo-grid-item');
+        var items = [];
+        allItems.forEach(function(item) {
+            var cb = item.querySelector('.photo-checkbox');
+            if (cb && cb.checked) items.push(item);
+        });
+        var previewList = document.getElementById('batchRenamePreviewList');
+        previewList.innerHTML = '';
+
+        if (items.length === 0) {
+            previewList.innerHTML = '<p style="text-align:center;color:#999;padding:12px;">请先勾选需要重命名的图片</p>';
+            return;
+        }
+
+        var count = Math.min(3, items.length);
+        for (var i = 0; i < count; i++) {
+            var nameEl = items[i].querySelector('.photo-filename');
+            if (!nameEl) continue;
+            var oldName = nameEl.textContent.trim();
+            var newName = generateBatchName(template, i, oldName);
+
+            var div = document.createElement('div');
+            div.className = 'batch-rename-preview-item';
+            div.innerHTML = '<span class="old-name">' + oldName + '</span>'
+                + '<span class="arrow"><i class="fas fa-arrow-right"></i></span>'
+                + '<span class="new-name">' + newName + '</span>';
+            previewList.appendChild(div);
+        }
+        if (items.length > 3) {
+            var more = document.createElement('p');
+            more.style.cssText = 'text-align:center;color:#999;font-size:12px;margin-top:8px;';
+            more.textContent = '... 还有 ' + (items.length - 3) + ' 项';
+            previewList.appendChild(more);
+        }
+    }
+
+    // 打开批量重命名弹窗
+    function openBatchRenameModal() {
+        document.getElementById('batchRenameTemplate').value = '{chapter_date}_{chapter_title}_{index}';
+        updateBatchPreview();
+        document.getElementById('batchRenameModalOverlay').classList.add('active');
+        setTimeout(function() {
+            document.getElementById('batchRenameTemplate').focus();
+        }, 100);
+    }
+
+    // 关闭批量重命名弹窗
+    function closeBatchRenameModal() {
+        document.getElementById('batchRenameModalOverlay').classList.remove('active');
+    }
+
+    // 批量重命名 - 模板输入实时更新预览
+    document.getElementById('batchRenameTemplate').addEventListener('input', updateBatchPreview);
+
+    // 批量重命名 - 确认
+    document.getElementById('batchRenameConfirmBtn').addEventListener('click', function() {
+        var template = document.getElementById('batchRenameTemplate').value.trim();
+        if (!template) {
+            showToast('请输入命名模板', 'fa-exclamation-circle');
+            return;
+        }
+        var allItems = document.querySelectorAll('#admin-photos .photo-grid-item');
+        var items = [];
+        allItems.forEach(function(item) {
+            var cb = item.querySelector('.photo-checkbox');
+            if (cb && cb.checked) items.push(item);
+        });
+        if (items.length === 0) {
+            showToast('请先勾选需要重命名的图片', 'fa-exclamation-circle');
+            return;
+        }
+        items.forEach(function(item, index) {
+            var nameEl = item.querySelector('.photo-filename');
+            if (!nameEl) return;
+            var oldName = nameEl.textContent.trim();
+            var newName = generateBatchName(template, index, oldName);
+            nameEl.textContent = newName;
+            item.setAttribute('data-filename', newName);
+        });
+        closeBatchRenameModal();
+        showToast('批量重命名成功，共 ' + items.length + ' 张图片');
+        resetBatchBar('#admin-photos');
+    });
+
+    // 批量重命名 - 取消/关闭
+    document.getElementById('batchRenameCancelBtn').addEventListener('click', closeBatchRenameModal);
+    document.getElementById('batchRenameModalClose').addEventListener('click', closeBatchRenameModal);
+    document.getElementById('batchRenameModalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeBatchRenameModal();
+    });
+
+    // 批量重命名按钮
+    document.getElementById('btnBatchRename').addEventListener('click', openBatchRenameModal);
+
+    // ========== 视频重命名功能 ==========
+
+    // 获取所有视频文件名
+    function getAllVideoFilenames() {
+        var items = document.querySelectorAll('#admin-videos .chapter-card[data-filename]');
+        var names = [];
+        items.forEach(function(item) {
+            var nameEl = item.querySelector('.video-filename');
+            if (nameEl) names.push(nameEl.textContent.trim());
+        });
+        return names;
+    }
+
+    // 当前正在重命名的视频元素
+    var currentVideoRenameItem = null;
+
+    // 打开视频单张重命名弹窗
+    function openVideoRenameModal(cardItem) {
+        currentVideoRenameItem = cardItem;
+        var filenameEl = cardItem.querySelector('.video-filename');
+        if (!filenameEl) return;
+        var filename = filenameEl.textContent.trim();
+        var parts = splitFilename(filename);
+
+        document.getElementById('videoRenameCurrentName').textContent = filename;
+        document.getElementById('videoRenameNewName').value = parts.name;
+        document.getElementById('videoRenameExt').textContent = parts.ext;
+        document.getElementById('videoRenamePreviewName').textContent = filename;
+        document.getElementById('videoRenameConflict').style.display = 'none';
+
+        document.getElementById('videoRenameModalOverlay').classList.add('active');
+        setTimeout(function() {
+            document.getElementById('videoRenameNewName').focus();
+            document.getElementById('videoRenameNewName').select();
+        }, 100);
+    }
+
+    // 关闭视频单张重命名弹窗
+    function closeVideoRenameModal() {
+        document.getElementById('videoRenameModalOverlay').classList.remove('active');
+        currentVideoRenameItem = null;
+    }
+
+    // 视频单张重命名 - 实时预览和冲突检测
+    document.getElementById('videoRenameNewName').addEventListener('input', function() {
+        var newName = this.value.trim();
+        var ext = document.getElementById('videoRenameExt').textContent;
+        var preview = newName + ext;
+        document.getElementById('videoRenamePreviewName').textContent = preview || '-';
+
+        // 冲突检测
+        var allNames = getAllVideoFilenames();
+        var currentName = currentVideoRenameItem ? currentVideoRenameItem.querySelector('.video-filename').textContent.trim() : '';
+        var conflict = false;
+        if (newName && (newName + ext) !== currentName) {
+            for (var i = 0; i < allNames.length; i++) {
+                if (allNames[i].toLowerCase() === (newName + ext).toLowerCase()) {
+                    conflict = true;
+                    break;
+                }
+            }
+        }
+        document.getElementById('videoRenameConflict').style.display = conflict ? 'flex' : 'none';
+    });
+
+    // 视频单张重命名 - 确认
+    document.getElementById('videoRenameConfirmBtn').addEventListener('click', async function() {
+        var newName = document.getElementById('videoRenameNewName').value.trim();
+        var ext = document.getElementById('videoRenameExt').textContent;
+        if (!newName) { showToast('文件名不能为空', 'fa-exclamation-circle'); return; }
+        var conflictEl = document.getElementById('videoRenameConflict');
+        if (conflictEl.style.display !== 'none') { showToast('文件名冲突，请修改后重试', 'fa-exclamation-circle'); return; }
+        if (currentVideoRenameItem) {
+            var videoId = currentVideoRenameItem.getAttribute('data-id');
+            const result = await apiPut('/api/admin/videos/' + videoId, { file_name: newName + ext });
+            if (result && result.ok) {
+                var filenameEl = currentVideoRenameItem.querySelector('.video-filename');
+                if (filenameEl) filenameEl.textContent = result.new_name || (newName + ext);
+                closeVideoRenameModal();
+                showToast('重命名成功');
+            } else { showToast(result?.error || '重命名失败', 'fa-exclamation-circle'); }
+        }
+    });
+
+    // 视频单张重命名 - 取消/关闭
+    document.getElementById('videoRenameCancelBtn').addEventListener('click', closeVideoRenameModal);
+    document.getElementById('videoRenameModalClose').addEventListener('click', closeVideoRenameModal);
+    document.getElementById('videoRenameModalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeVideoRenameModal();
+    });
+
+    // 绑定视频单张重命名按钮事件
+    document.querySelectorAll('.btn-video-rename-single').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var cardItem = this.closest('.chapter-card');
+            if (cardItem) openVideoRenameModal(cardItem);
+        });
+    });
+
+    // ========== 视频批量重命名 ==========
+
+    // 更新视频批量重命名预览
+    function updateVideoBatchPreview() {
+        var template = document.getElementById('videoBatchRenameTemplate').value;
+        var allItems = document.querySelectorAll('#admin-videos .chapter-card[data-filename]');
+        var items = [];
+        allItems.forEach(function(item) {
+            var cb = item.querySelector('.video-checkbox');
+            if (cb && cb.checked) items.push(item);
+        });
+        var previewList = document.getElementById('videoBatchRenamePreviewList');
+        previewList.innerHTML = '';
+
+        if (items.length === 0) {
+            previewList.innerHTML = '<p style="text-align:center;color:#999;padding:12px;">请先勾选需要重命名的视频</p>';
+            return;
+        }
+
+        var count = Math.min(3, items.length);
+        for (var i = 0; i < count; i++) {
+            var nameEl = items[i].querySelector('.video-filename');
+            if (!nameEl) continue;
+            var oldName = nameEl.textContent.trim();
+            var newName = generateBatchName(template, i, oldName);
+
+            var div = document.createElement('div');
+            div.className = 'batch-rename-preview-item';
+            div.innerHTML = '<span class="old-name">' + oldName + '</span>'
+                + '<span class="arrow"><i class="fas fa-arrow-right"></i></span>'
+                + '<span class="new-name">' + newName + '</span>';
+            previewList.appendChild(div);
+        }
+        if (items.length > 3) {
+            var more = document.createElement('p');
+            more.style.cssText = 'text-align:center;color:#999;font-size:12px;margin-top:8px;';
+            more.textContent = '... 还有 ' + (items.length - 3) + ' 项';
+            previewList.appendChild(more);
+        }
+    }
+
+    // 打开视频批量重命名弹窗
+    function openVideoBatchRenameModal() {
+        document.getElementById('videoBatchRenameTemplate').value = '{chapter_date}_{chapter_title}_{index}';
+        updateVideoBatchPreview();
+        document.getElementById('videoBatchRenameModalOverlay').classList.add('active');
+        setTimeout(function() {
+            document.getElementById('videoBatchRenameTemplate').focus();
+        }, 100);
+    }
+
+    // 关闭视频批量重命名弹窗
+    function closeVideoBatchRenameModal() {
+        document.getElementById('videoBatchRenameModalOverlay').classList.remove('active');
+    }
+
+    // 视频批量重命名 - 模板输入实时更新预览
+    document.getElementById('videoBatchRenameTemplate').addEventListener('input', updateVideoBatchPreview);
+
+    // 视频批量重命名 - 确认
+    document.getElementById('videoBatchRenameConfirmBtn').addEventListener('click', function() {
+        var template = document.getElementById('videoBatchRenameTemplate').value.trim();
+        if (!template) {
+            showToast('请输入命名模板', 'fa-exclamation-circle');
+            return;
+        }
+        var allItems = document.querySelectorAll('#admin-videos .chapter-card[data-filename]');
+        var items = [];
+        allItems.forEach(function(item) {
+            var cb = item.querySelector('.video-checkbox');
+            if (cb && cb.checked) items.push(item);
+        });
+        if (items.length === 0) {
+            showToast('请先勾选需要重命名的视频', 'fa-exclamation-circle');
+            return;
+        }
+        items.forEach(function(item, index) {
+            var nameEl = item.querySelector('.video-filename');
+            if (!nameEl) return;
+            var oldName = nameEl.textContent.trim();
+            var newName = generateBatchName(template, index, oldName);
+            nameEl.textContent = newName;
+            item.setAttribute('data-filename', newName);
+        });
+        closeVideoBatchRenameModal();
+        showToast('批量重命名成功，共 ' + items.length + ' 个视频');
+        resetBatchBar('#admin-videos');
+    });
+
+    // 视频批量重命名 - 取消/关闭
+    document.getElementById('videoBatchRenameCancelBtn').addEventListener('click', closeVideoBatchRenameModal);
+    document.getElementById('videoBatchRenameModalClose').addEventListener('click', closeVideoBatchRenameModal);
+    document.getElementById('videoBatchRenameModalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeVideoBatchRenameModal();
+    });
+
+    // 视频批量重命名按钮
+    document.getElementById('btnBatchRenameVideo').addEventListener('click', openVideoBatchRenameModal);
+
+    // 视频复选框 - 控制批量操作栏显示
+    var videoBatchBar = document.querySelector('#admin-videos .batch-bar');
+    var videoCheckboxes = document.querySelectorAll('.video-checkbox');
+    videoBatchBar.style.display = 'none';
+    videoCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var checkedCount = document.querySelectorAll('.video-checkbox:checked').length;
+            videoBatchBar.style.display = checkedCount > 0 ? 'flex' : 'none';
+            videoBatchBar.querySelector('strong').textContent = checkedCount;
+        });
+    });
+
+    // ========== 图片批量删除 ==========
+    document.getElementById('btnBatchDeletePhotos').addEventListener('click', async function() {
+        var allItems = document.querySelectorAll('#admin-photos .photo-grid-item');
+        var checkedItems = [];
+        allItems.forEach(function(item) { var cb = item.querySelector('.photo-checkbox'); if (cb && cb.checked) checkedItems.push(item); });
+        if (checkedItems.length === 0) { showToast('请先勾选需要删除的图片', 'fa-exclamation-circle'); return; }
+        if (!confirm('确定要删除选中的 ' + checkedItems.length + ' 张图片吗？')) return;
+        for (const item of checkedItems) {
+            var photoId = item.getAttribute('data-id');
+            if (photoId) await apiDelete('/api/admin/photos/' + photoId);
+            item.style.transition = 'opacity 0.3s'; item.style.opacity = '0';
+            setTimeout(function() { item.remove(); }, 300);
+        }
+        showToast('已删除 ' + checkedItems.length + ' 张图片');
+        resetBatchBar('#admin-photos');
+    });
+
+    // ========== 视频批量删除 ==========
+    document.getElementById('btnBatchDeleteVideos').addEventListener('click', async function() {
+        var allItems = document.querySelectorAll('#admin-videos .chapter-card[data-filename]');
+        var checkedItems = [];
+        allItems.forEach(function(item) { var cb = item.querySelector('.video-checkbox'); if (cb && cb.checked) checkedItems.push(item); });
+        if (checkedItems.length === 0) { showToast('请先勾选需要删除的视频', 'fa-exclamation-circle'); return; }
+        if (!confirm('确定要删除选中的 ' + checkedItems.length + ' 个视频吗？')) return;
+        for (const item of checkedItems) {
+            var videoId = item.getAttribute('data-id');
+            if (videoId) await apiDelete('/api/admin/videos/' + videoId);
+            item.style.transition = 'opacity 0.3s'; item.style.opacity = '0';
+            setTimeout(function() { item.remove(); }, 300);
+        }
+        showToast('已删除 ' + checkedItems.length + ' 个视频');
+        resetBatchBar('#admin-videos');
+    });
+// ========== 图片灯箱 ==========
+var lightboxPhotos = [];
+var lightboxIndex = 0;
+
+document.querySelectorAll('.btn-photo-preview').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var card = this.closest('.photo-grid-item');
+        if (!card) return;
+        var img = card.querySelector('img');
+        var nameEl = card.querySelector('.photo-filename');
+        if (!img) return;
+        
+        // 收集所有图片
+        lightboxPhotos = [];
+        document.querySelectorAll('#admin-photos .photo-grid-item').forEach(function(item) {
+            var i = item.querySelector('img');
+            var n = item.querySelector('.photo-filename');
+            if (i && n) lightboxPhotos.push({ src: i.src, name: n.textContent.trim() });
+        });
+        
+        // 找到当前索引
+        lightboxIndex = lightboxPhotos.findIndex(function(p) { return p.src === img.src; });
+        if (lightboxIndex === -1) lightboxIndex = 0;
+        
+        showLightbox();
+    });
+});
+
+function showLightbox() {
+    var photo = lightboxPhotos[lightboxIndex];
+    document.getElementById('lightboxImg').src = photo.src;
+    document.getElementById('lightboxCaption').textContent = photo.name;
+    document.getElementById('lightboxOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    document.getElementById('lightboxOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+document.getElementById('lightboxOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeLightbox();
+});
+document.getElementById('lightboxPrev').addEventListener('click', function(e) {
+    e.stopPropagation();
+    lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+    showLightbox();
+});
+document.getElementById('lightboxNext').addEventListener('click', function(e) {
+    e.stopPropagation();
+    lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
+    showLightbox();
+});
+
+// 键盘操作
+document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('lightboxOverlay').classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightbox(); }
+    if (e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightbox(); }
+});
+
+// ========== 视频播放器 ==========
+var videoPlaying = false;
+var videoTimer = null;
+var videoProgress = 0;
+
+document.querySelectorAll('.btn-video-play').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var card = this.closest('.chapter-card');
+        if (!card) return;
+        var img = card.querySelector('img');
+        var nameEl = card.querySelector('.video-filename');
+        var durationEl = card.querySelector('.video-duration');
+        
+        document.getElementById('videoPlayerThumb').src = img ? img.src : '';
+        document.getElementById('videoPlayerTitle').textContent = nameEl ? nameEl.textContent.trim() : '视频播放';
+        document.getElementById('videoTotalTime').textContent = durationEl ? durationEl.textContent.trim() : '0:00';
+        
+        videoPlaying = false;
+        videoProgress = 0;
+        document.getElementById('videoProgressBar').style.width = '0%';
+        document.getElementById('videoCurrentTime').textContent = '0:00';
+        document.getElementById('videoPlayerPlayBtn').innerHTML = '<i class="fas fa-play" style="margin-left:3px;"></i>';
+        document.getElementById('videoPlayerPlayBtn').classList.remove('playing');
+        document.getElementById('videoCtrlPlay').innerHTML = '<i class="fas fa-play"></i>';
+        
+        document.getElementById('videoPlayerOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+});
+
+function toggleVideoPlay() {
+    videoPlaying = !videoPlaying;
+    var playBtn = document.getElementById('videoPlayerPlayBtn');
+    var ctrlBtn = document.getElementById('videoCtrlPlay');
+    
+    if (videoPlaying) {
+        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        playBtn.classList.add('playing');
+        ctrlBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        startVideoProgress();
+    } else {
+        playBtn.innerHTML = '<i class="fas fa-play" style="margin-left:3px;"></i>';
+        playBtn.classList.remove('playing');
+        ctrlBtn.innerHTML = '<i class="fas fa-play"></i>';
+        stopVideoProgress();
+    }
+}
+
+function startVideoProgress() {
+    stopVideoProgress();
+    videoTimer = setInterval(function() {
+        videoProgress += 0.5;
+        if (videoProgress >= 100) {
+            videoProgress = 0;
+            videoPlaying = false;
+            document.getElementById('videoPlayerPlayBtn').innerHTML = '<i class="fas fa-play" style="margin-left:3px;"></i>';
+            document.getElementById('videoPlayerPlayBtn').classList.remove('playing');
+            document.getElementById('videoCtrlPlay').innerHTML = '<i class="fas fa-play"></i>';
+            stopVideoProgress();
+        }
+        document.getElementById('videoProgressBar').style.width = videoProgress + '%';
+        // 更新时间
+        var totalSec = parseTimeStr(document.getElementById('videoTotalTime').textContent);
+        var currentSec = Math.floor(totalSec * videoProgress / 100);
+        document.getElementById('videoCurrentTime').textContent = formatTime(currentSec);
+    }, 100);
+}
+
+function stopVideoProgress() {
+    if (videoTimer) { clearInterval(videoTimer); videoTimer = null; }
+}
+
+function parseTimeStr(str) {
+    var parts = str.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+function formatTime(sec) {
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+document.getElementById('videoPlayerPlayBtn').addEventListener('click', toggleVideoPlay);
+document.getElementById('videoCtrlPlay').addEventListener('click', toggleVideoPlay);
+document.getElementById('videoPlayerClose').addEventListener('click', function() {
+    document.getElementById('videoPlayerOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+    stopVideoProgress();
+    videoPlaying = false;
+});
+document.getElementById('videoPlayerOverlay').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.getElementById('videoPlayerOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+        stopVideoProgress();
+        videoPlaying = false;
+    }
+});
+
+// ========== 章节管理 - 编辑 ==========
+document.querySelectorAll('.btn-chapter-edit').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var card = this.closest('.chapter-card');
+        var titleEl = card ? card.querySelector('h3') : null;
+        var dateEl = card ? card.querySelector('.chapter-date-tag') : null;
+        var toggleInput = card ? card.querySelector('.toggle-switch input') : null;
+        if (!titleEl) return;
+        var oldTitle = titleEl.textContent.trim();
+        var oldDateStart = dateEl ? dateEl.getAttribute('data-start') || '' : '';
+        var oldDateEnd = dateEl ? dateEl.getAttribute('data-end') || '' : '';
+        var isEnabled = toggleInput ? toggleInput.checked : true;
+        
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9998;';
+        overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px;width:460px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">'
+            + '<h3 style="margin:0 0 24px;font-size:18px;color:#333;">编辑章节</h3>'
+            // 标题
+            + '<div style="margin-bottom:16px;">'
+            + '<label style="display:block;font-size:13px;color:#666;margin-bottom:6px;">章节标题</label>'
+            + '<input type="text" id="editChapterTitle" value="' + oldTitle + '" style="width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;" onfocus="this.style.borderColor=\'#E91E63\'" onblur="this.style.borderColor=\'#ddd\'">'
+            + '</div>'
+            // 日期范围
+            + '<div style="margin-bottom:16px;">'
+            + '<label style="display:block;font-size:13px;color:#666;margin-bottom:6px;">日期范围</label>'
+            + '<div style="display:flex;align-items:center;gap:8px;">'
+            + '<input type="date" id="editChapterDateStart" value="' + oldDateStart + '" style="flex:1;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;" onfocus="this.style.borderColor=\'#E91E63\'" onblur="this.style.borderColor=\'#ddd\'">'
+            + '<span style="color:#999;font-size:14px;">至</span>'
+            + '<input type="date" id="editChapterDateEnd" value="' + oldDateEnd + '" style="flex:1;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;" onfocus="this.style.borderColor=\'#E91E63\'" onblur="this.style.borderColor=\'#ddd\'">'
+            + '</div>'
+            + '</div>'
+            // 启用开关
+            + '<div style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;">'
+            + '<label style="font-size:14px;color:#333;">是否启用</label>'
+            + '<label class="toggle-switch">'
+            + '<input type="checkbox" id="editChapterEnabled"' + (isEnabled ? ' checked' : '') + '>'
+            + '<span class="toggle-slider"></span>'
+            + '</label>'
+            + '</div>'
+            // 按钮
+            + '<div style="display:flex;gap:12px;justify-content:flex-end;">'
+            + '<button id="editChapterCancel" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#666;cursor:pointer;font-size:14px;">取消</button>'
+            + '<button id="editChapterConfirm" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#E91E63,#FF5252);color:#fff;cursor:pointer;font-size:14px;">保存修改</button>'
+            + '</div></div>';
+        document.body.appendChild(overlay);
+        
+        var titleInput = overlay.querySelector('#editChapterTitle');
+        titleInput.focus();
+        titleInput.select();
+        
+        overlay.querySelector('#editChapterCancel').addEventListener('click', function() {
+            document.body.removeChild(overlay);
+        });
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) document.body.removeChild(overlay);
+        });
+        overlay.querySelector('#editChapterConfirm').addEventListener('click', function() {
+            var newTitle = titleInput.value.trim();
+            if (!newTitle) { showToast('章节名称不能为空', 'fa-exclamation-circle'); return; }
+            var dateStart = overlay.querySelector('#editChapterDateStart').value;
+            var dateEnd = overlay.querySelector('#editChapterDateEnd').value;
+            var enabled = overlay.querySelector('#editChapterEnabled').checked;
+            
+            // 更新标题
+            titleEl.textContent = newTitle;
+            // 更新日期标签
+            if (dateEl) {
+                dateEl.setAttribute('data-start', dateStart);
+                dateEl.setAttribute('data-end', dateEnd);
+                if (dateStart && dateEnd && dateStart !== dateEnd) {
+                    dateEl.textContent = dateStart + ' ~ ' + dateEnd;
+                } else if (dateStart) {
+                    dateEl.textContent = dateStart;
+                } else {
+                    dateEl.textContent = '未设置日期';
+                }
+            }
+            // 更新启用开关
+            if (toggleInput) toggleInput.checked = enabled;
+            // 更新卡片样式
+            if (!enabled) {
+                card.style.opacity = '0.5';
+                card.style.filter = 'grayscale(0.5)';
+            } else {
+                card.style.opacity = '1';
+                card.style.filter = 'none';
+            }
+            
+            document.body.removeChild(overlay);
+            showToast('章节"' + newTitle + '"已更新');
+        });
+    });
+});
+
+// ========== 章节排序 ==========
+function sortChapters(type) {
+    var grid = document.querySelector('#admin-chapters .grid.grid-cols-2');
+    if (!grid) return;
+    var cards = Array.from(grid.querySelectorAll('.chapter-card'));
+    
+    cards.sort(function(a, b) {
+        if (type === 'date') {
+            var dateA = a.querySelector('.chapter-date-tag');
+            var dateB = b.querySelector('.chapter-date-tag');
+            var startA = dateA ? (dateA.getAttribute('data-start') || '9999') : '9999';
+            var startB = dateB ? (dateB.getAttribute('data-start') || '9999') : '9999';
+            return startA.localeCompare(startB);
+        } else {
+            var nameA = a.querySelector('h3') ? a.querySelector('h3').textContent.trim() : '';
+            var nameB = b.querySelector('h3') ? b.querySelector('h3').textContent.trim() : '';
+            return nameA.localeCompare(nameB, 'zh-CN');
+        }
+    });
+    
+    cards.forEach(function(card) {
+        card.style.transition = 'opacity 0.3s, transform 0.3s';
+        grid.appendChild(card);
+    });
+    
+    // 更新按钮状态
+    document.querySelectorAll('.chapter-sort-btn').forEach(function(btn) {
+        btn.classList.remove('active-sort');
+    });
+    document.querySelector('.chapter-sort-btn[data-sort="' + type + '"]').classList.add('active-sort');
+    showToast(type === 'date' ? '已按开始时间排序' : '已按名称排序');
+}
+
+document.querySelectorAll('.btn-chapter-delete').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var card = this.closest('.chapter-card');
+        var title = card ? card.querySelector('h3').textContent.trim() : '';
+        if (!confirm('确定要删除章节"' + title + '"吗？此操作不可恢复。')) return;
+        card.style.transition = 'opacity 0.3s, transform 0.3s';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(function() { card.remove(); }, 300);
+        showToast('已删除章节：' + title);
+    });
+});
+
+// ========== 文章编辑器 ==========
+var editorTextarea = document.getElementById('editorTextarea');
+var editorPreview = document.getElementById('editorPreview');
+
+if (editorTextarea && editorPreview) {
+    // 实时预览
+    editorTextarea.addEventListener('input', function() {
+        var md = this.value;
+        // 简单的 Markdown 渲染
+        var html = md
+            .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
+        editorPreview.innerHTML = html;
+    });
+    
+    // 工具栏按钮
+    document.querySelectorAll('.editor-toolbar button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var action = this.getAttribute('data-action');
+            if (!action) return;
+            var start = editorTextarea.selectionStart;
+            var end = editorTextarea.selectionEnd;
+            var text = editorTextarea.value;
+            var selected = text.substring(start, end);
+            var insert = '';
+            
+            switch(action) {
+                case 'bold': insert = '**' + (selected || '粗体文字') + '**'; break;
+                case 'italic': insert = '*' + (selected || '斜体文字') + '*'; break;
+                case 'h1': insert = '\n# ' + (selected || '一级标题') + '\n'; break;
+                case 'h2': insert = '\n## ' + (selected || '二级标题') + '\n'; break;
+                case 'h3': insert = '\n### ' + (selected || '三级标题') + '\n'; break;
+                case 'list': insert = '\n- ' + (selected || '列表项') + '\n'; break;
+                case 'quote': insert = '\n> ' + (selected || '引用文字') + '\n'; break;
+                case 'image': insert = '![图片描述](图片链接)'; break;
+                case 'link': insert = '[' + (selected || '链接文字') + '](链接地址)'; break;
+            }
+            
+            editorTextarea.value = text.substring(0, start) + insert + text.substring(end);
+            editorTextarea.focus();
+            editorTextarea.selectionStart = start;
+            editorTextarea.selectionEnd = start + insert.length;
+            // 触发 input 事件更新预览
+            editorTextarea.dispatchEvent(new Event('input'));
+        });
+    });
+}
+
+// ========== 仪表盘快捷操作 ==========
+async function doScanFolders() {
+    if (!confirm('确定要扫描 photos/ 文件夹吗？将自动识别日期文件夹并创建章节。')) return;
+    showToast('正在扫描文件夹...', 'fa-spinner fa-spin');
+    const result = await apiPost('/api/admin/scan');
+    if (result) {
+        showToast(`扫描完成！发现 ${result.scanned_chapters || 0} 个文件夹，新建 ${result.created || 0} 个章节`);
+        loadAdminChapters();
+        populateChapterSelects();
+        loadAdminPhotos();
+        loadAdminVideos();
+        loadDashboard();
+    } else {
+        showToast('扫描失败，请检查 photos/ 目录', 'fa-exclamation-circle');
+    }
+}
+
+function createChapter() {
+    var title = document.getElementById('newChapterTitle').value.trim();
+    var date = document.getElementById('newChapterDate').value;
+    if (!title) { showToast('请输入章节标题', 'fa-exclamation-circle'); return; }
+    if (!date) { showToast('请选择日期', 'fa-exclamation-circle'); return; }
+    apiPost('/api/admin/chapters', { title: title, date_start: date }).then(result => {
+      if (result && result.id) {
+        showToast('章节"' + title + '"创建成功！');
+        loadAdminChapters();
+        populateChapterSelects();
+      } else {
+        showToast('创建失败', 'fa-exclamation-circle');
+      }
+    });
+    document.getElementById('newChapterModal').style.display = 'none';
+    document.getElementById('newChapterTitle').value = '';
+    document.getElementById('newChapterDate').value = '';
+}
+
+var uploadType = 'photo';
+function openUploadModal(type) {
+    uploadType = type;
+    document.getElementById('uploadModalTitle').textContent = type === 'photo' ? '上传图片' : '上传视频';
+    document.getElementById('uploadHint').textContent = type === 'photo' ? '支持 JPG、PNG、GIF 格式' : '支持 MP4、WebM、MOV 格式';
+    document.getElementById('uploadFileInput').accept = type === 'photo' ? 'image/*' : 'video/*';
+    document.getElementById('uploadFileList').innerHTML = '';
+    document.getElementById('uploadModal').style.display = 'flex';
+}
+
+function handleFileSelect(input) {
+    var list = document.getElementById('uploadFileList');
+    list.innerHTML = '';
+    Array.from(input.files).forEach(function(file) {
+        var div = document.createElement('div');
+        div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#f9f9f9;border-radius:6px;margin-bottom:4px;font-size:13px;';
+        div.innerHTML = '<span><i class="fas fa-file" style="color:#E91E63;margin-right:8px;"></i>' + file.name + '</span><span style="color:#999;">' + (file.size / 1024 / 1024).toFixed(1) + ' MB</span>';
+        list.appendChild(div);
+    });
+}
+
+async function doUpload() {
+    var chapter = document.getElementById('uploadTargetChapter').value;
+    if (!chapter) { showToast('请选择目标章节', 'fa-exclamation-circle'); return; }
+    var files = document.getElementById('uploadFileInput').files;
+    if (files.length === 0) { showToast('请选择文件', 'fa-exclamation-circle'); return; }
+    document.getElementById('uploadModal').style.display = 'none';
+    var formData = new FormData();
+    formData.append('chapter_id', chapter);
+    var endpoint = uploadType === 'photo' ? '/api/admin/photos/upload' : '/api/admin/videos/upload';
+    for (var i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+    showToast('正在上传 ' + files.length + ' 个文件...', 'fa-spinner fa-spin');
+    const result = await apiPostForm(endpoint, formData);
+    if (result && result.uploaded) {
+      showToast('成功上传 ' + result.uploaded.length + ' 个' + (uploadType === 'photo' ? '图片' : '视频') + '！');
+      if (uploadType === 'photo') loadAdminPhotos(chapter);
+      else loadAdminVideos(chapter);
+      loadDashboard();
+    } else {
+      showToast(result?.error || '上传失败，请重试', 'fa-exclamation-circle');
+    }
+  }
+
+// ========== 音乐管理 - 关联章节多选 ==========
+var currentMusicRowIndex = -1;
+
+document.querySelectorAll('.btn-music-chapter').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        currentMusicRowIndex = parseInt(this.getAttribute('data-index'));
+        var modal = document.getElementById('musicChapterModal');
+        
+        // 获取当前行已关联的章节
+        var row = this.closest('tr');
+        var tags = row.querySelectorAll('.tag');
+        var selectedChapters = [];
+        tags.forEach(function(tag) { selectedChapters.push(tag.textContent.trim()); });
+        
+        // 设置复选框状态
+        var isAll = selectedChapters.length === 1 && selectedChapters[0] === '全部章节';
+        document.getElementById('musicChapterSelectAll').checked = isAll;
+        document.querySelectorAll('.music-chapter-cb').forEach(function(cb) {
+            cb.checked = isAll || selectedChapters.indexOf(cb.value) !== -1;
+        });
+        
+        modal.style.display = 'flex';
+    });
+});
+
+// 全选/取消全选
+document.getElementById('musicChapterSelectAll').addEventListener('change', function() {
+    document.querySelectorAll('.music-chapter-cb').forEach(function(cb) {
+        cb.checked = this.checked;
+    });
+});
+
+function saveMusicChapters() {
+    var allChecked = document.getElementById('musicChapterSelectAll').checked;
+    var selected = [];
+    if (allChecked) { selected = ['全部章节']; }
+    else { document.querySelectorAll('.music-chapter-cb:checked').forEach(function(cb) { selected.push(cb.value); }); }
+    if (selected.length === 0) { showToast('请至少选择一个章节', 'fa-exclamation-circle'); return; }
+
+    var rows = document.querySelectorAll('#admin-music tbody tr');
+    if (currentMusicRowIndex >= 0 && currentMusicRowIndex < rows.length) {
+        var cell = rows[currentMusicRowIndex].querySelector('td:nth-child(3)');
+        var tagsHtml = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
+        selected.forEach(function(name) { tagsHtml += '<span class="tag tag-pink" style="font-size:11px;">' + name + '</span>'; });
+        tagsHtml += '<button class="btn-music-chapter" data-index="' + currentMusicRowIndex + '" style="background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;color:#666;cursor:pointer;">设置</button>';
+        tagsHtml += '</div>';
+        cell.innerHTML = tagsHtml;
+
+        cell.querySelector('.btn-music-chapter').addEventListener('click', function() {
+            currentMusicRowIndex = parseInt(this.getAttribute('data-index'));
+            var modal = document.getElementById('musicChapterModal');
+            var tags = cell.querySelectorAll('.tag');
+            var selectedChapters = [];
+            tags.forEach(function(tag) { selectedChapters.push(tag.textContent.trim()); });
+            var isAll = selectedChapters.length === 1 && selectedChapters[0] === '全部章节';
+            document.getElementById('musicChapterSelectAll').checked = isAll;
+            document.querySelectorAll('.music-chapter-cb').forEach(function(cb) { cb.checked = isAll || selectedChapters.indexOf(cb.value) !== -1; });
+            modal.style.display = 'flex';
+        });
+    }
+
+    document.getElementById('musicChapterModal').style.display = 'none';
+    showToast('关联章节已更新');
+}
+
+/* ========== 初始化 ========== */
+loadDashboard();
+loadAdminChapters();
+populateChapterSelects();
+loadAdminPhotos();
+loadAdminVideos();
+</script>
+
+</body>
+</html>

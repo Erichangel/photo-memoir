@@ -3080,18 +3080,374 @@
     document.getElementById('btnBatchRenameVideo').addEventListener('click', openVideoBatchRenameModal);
 
     // 视频复选框 - 控制批量操作栏显示
-    var videoBatchBar = document.querySelector('#admin-videos .batch-bar');
-    var videoCheckboxes = document.querySelectorAll('.video-checkbox');
-    videoBatchBar.style.display = 'none';
-    videoCheckboxes.forEach(function(cb) {
+    document.querySelectorAll('#admin-videos .video-checkbox').forEach(function(cb) {
         cb.addEventListener('change', function() {
-            var checkedCount = document.querySelectorAll('.video-checkbox:checked').length;
-            videoBatchBar.style.display = checkedCount > 0 ? 'flex' : 'none';
-            videoBatchBar.querySelector('strong').textContent = checkedCount;
+            var checked = document.querySelectorAll('#admin-videos .video-checkbox:checked').length;
+            var countEl = document.querySelector('#admin-videos .batch-bar strong');
+            if (countEl) {
+                countEl.textContent = checked;
+            }
+            var batchBar = document.querySelector('#admin-videos .batch-bar');
+            if (batchBar) {
+                batchBar.style.display = checked > 0 ? 'flex' : 'none';
+            }
         });
     });
 
-    // ========== 图片批量删除 ==========
+    // 视频批量删除
+    document.getElementById('btnBatchDeleteVideos').addEventListener('click', function() {
+        var checked = document.querySelectorAll('#admin-videos .video-checkbox:checked');
+        if (checked.length === 0) {
+            showToast('请先勾选需要删除的视频', 'fa-exclamation-circle');
+            return;
+        }
+        if (!confirm('确定删除选中的 ' + checked.length + ' 个视频吗？')) {
+            return;
+        }
+        checked.forEach(function(cb) {
+            var item = cb.closest('.chapter-card');
+            if (item) {
+                item.style.transition = 'opacity 0.3s';
+                item.style.opacity = '0';
+                setTimeout(() => item.remove(), 300);
+            }
+        });
+        showToast('已删除 ' + checked.length + ' 个视频');
+        resetBatchBar('#admin-videos');
+    });
+
+    // 图片批量删除
+    document.getElementById('btnBatchDeletePhotos').addEventListener('click', function() {
+        var checked = document.querySelectorAll('#admin-photos .photo-checkbox:checked');
+        if (checked.length === 0) {
+            showToast('请先勾选需要删除的图片', 'fa-exclamation-circle');
+            return;
+        }
+        if (!confirm('确定删除选中的 ' + checked.length + ' 张图片吗？')) {
+            return;
+        }
+        checked.forEach(function(cb) {
+            var item = cb.closest('.photo-grid-item');
+            if (item) {
+                item.style.transition = 'opacity 0.3s';
+                item.style.opacity = '0';
+                setTimeout(() => item.remove(), 300);
+            }
+        });
+        showToast('已删除 ' + checked.length + ' 张图片');
+        resetBatchBar('#admin-photos');
+    });
+
+    // 章节编辑功能
+    function openChapterEditModal(card) {
+        var title = card.querySelector('h3').textContent;
+        var dateTag = card.querySelector('.chapter-date-tag');
+        var startDate = dateTag.getAttribute('data-start');
+        var endDate = dateTag.getAttribute('data-end');
+        var isEnabled = card.querySelector('.toggle-switch input').checked;
+        
+        // 这里可以打开编辑弹窗
+        showToast('编辑章节：' + title);
+    }
+
+    // 绑定章节编辑事件
+    document.querySelectorAll('.btn-chapter-edit').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var card = this.closest('.chapter-card');
+            if (card) {
+                openChapterEditModal(card);
+            }
+        });
+    });
+
+    // 章节排序功能
+    function sortChapters(type) {
+        document.querySelectorAll('.chapter-sort-btn').forEach(function(btn) {
+            btn.classList.remove('active-sort');
+        });
+        this.classList.add('active-sort');
+        showToast('已按' + (type === 'date' ? '时间' : '名称') + '排序');
+    }
+
+    // 音乐章节关联设置
+    document.querySelectorAll('.btn-music-chapter').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('musicChapterModal').style.display = 'flex';
+        });
+    });
+
+    // 音乐章节全选
+    document.getElementById('musicChapterSelectAll').addEventListener('change', function() {
+        var checkboxes = document.querySelectorAll('.music-chapter-cb');
+        checkboxes.forEach(function(cb) {
+            cb.checked = this.checked;
+        }.bind(this));
+    });
+
+    // 保存音乐章节关联
+    function saveMusicChapters() {
+        var checked = document.querySelectorAll('.music-chapter-cb:checked');
+        var chapters = Array.from(checked).map(cb => cb.value);
+        showToast('已保存关联章节：' + chapters.join(', '));
+        document.getElementById('musicChapterModal').style.display = 'none';
+    }
+
+    // 文章编辑器实时预览
+    document.getElementById('editorTextarea').addEventListener('input', function() {
+        var content = this.value;
+        var preview = document.getElementById('editorPreview');
+        // 简单的Markdown渲染
+        preview.innerHTML = content
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+            .replace(/^\*(.*)\*$/gim, '<i>$1</i>')
+            .replace(/^\*(.*)$/gim, '<li>$1</li>')
+            .replace(/<li>(.*)<\/li>/gim, '<ul><li>$1</li></ul>')
+            .replace(/^---$/gim, '<hr style="border:none;border-top:1px solid #eee;margin:16px 0;">')
+            .replace(/^<p><\/p>$/gim, '');
+    });
+
+    // 编辑器工具栏功能
+    document.querySelectorAll('.editor-toolbar button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var action = this.getAttribute('data-action');
+            var textarea = document.getElementById('editorTextarea');
+            var start = textarea.selectionStart;
+            var end = textarea.selectionEnd;
+            var selectedText = textarea.value.substring(start, end);
+            
+            var insertText = '';
+            switch(action) {
+                case 'bold':
+                    insertText = '**' + selectedText + '**';
+                    break;
+                case 'italic':
+                    insertText = '*' + selectedText + '*';
+                    break;
+                case 'h1':
+                    insertText = '# ' + selectedText;
+                    break;
+                case 'h2':
+                    insertText = '## ' + selectedText;
+                    break;
+                case 'h3':
+                    insertText = '### ' + selectedText;
+                    break;
+                case 'list':
+                    insertText = '* ' + selectedText;
+                    break;
+                case 'quote':
+                    insertText = '> ' + selectedText;
+                    break;
+                case 'image':
+                    insertText = '![图片描述](图片链接)';
+                    break;
+                case 'link':
+                    insertText = '[链接文本](链接地址)';
+                    break;
+            }
+            
+            if (insertText) {
+                textarea.value = textarea.value.substring(0, start) + insertText + textarea.value.substring(end);
+                textarea.focus();
+                textarea.setSelectionRange(start, start + insertText.length);
+                // 触发预览更新
+                textarea.dispatchEvent(new Event('input'));
+            }
+        });
+    });
+
+    // 评论删除功能
+    document.querySelectorAll('.comment-item .btn-outline').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var comment = this.closest('.comment-item');
+            var user = comment.querySelector('.font-semibold').textContent;
+            if (confirm('确定删除 ' + user + ' 的评论吗？')) {
+                comment.style.transition = 'opacity 0.3s';
+                comment.style.opacity = '0';
+                setTimeout(() => comment.remove(), 300);
+                showToast('已删除评论');
+            }
+        });
+    });
+
+    // 用户编辑功能
+    document.querySelectorAll('.user-card .btn-outline').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var userCard = this.closest('.user-card');
+            var userName = userCard.querySelector('h3').textContent;
+            if (this.querySelector('.fa-edit')) {
+                showToast('编辑用户：' + userName);
+            } else if (this.querySelector('.fa-ban')) {
+                if (confirm('确定禁用用户 ' + userName + ' 吗？')) {
+                    showToast('已禁用用户：' + userName);
+                }
+            }
+        });
+    });
+
+    // 新建用户功能
+    document.querySelector('.btn-primary i.fa-user-plus').closest('button').addEventListener('click', function() {
+        showToast('新建用户功能');
+    });
+
+    // 系统设置保存
+    document.querySelector('.btn-primary i.fa-save').closest('button').addEventListener('click', function() {
+        showToast('设置已保存');
+    });
+
+    // 扫描文件夹功能
+    function doScanFolders() {
+        showToast('正在扫描文件夹...');
+        setTimeout(() => {
+            showToast('扫描完成，发现 12 张照片和 3 个视频');
+        }, 2000);
+    }
+
+    // 上传功能
+    function openUploadModal(type) {
+        var modal = document.getElementById('uploadModal');
+        var title = document.getElementById('uploadModalTitle');
+        var hint = document.getElementById('uploadHint');
+        
+        if (type === 'photo') {
+            title.textContent = '上传图片';
+            hint.textContent = '支持 JPG、PNG、GIF 格式，单张不超过 10MB';
+        } else if (type === 'video') {
+            title.textContent = '上传视频';
+            hint.textContent = '支持 MP4、MOV、AVI 格式，单个不超过 500MB';
+        }
+        
+        modal.style.display = 'flex';
+    }
+
+    function handleFileSelect(input) {
+        var files = input.files;
+        var fileList = document.getElementById('uploadFileList');
+        fileList.innerHTML = '';
+        
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var div = document.createElement('div');
+            div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f9f9f9;border-radius:6px;margin-bottom:4px;';
+            div.innerHTML = '<span style="font-size:13px;">' + file.name + '</span>' +
+                          '<span style="font-size:12px;color:#999;">' + (file.size / 1024 / 1024).toFixed(1) + ' MB</span>';
+            fileList.appendChild(div);
+        }
+    }
+
+    function doUpload() {
+        var fileInput = document.getElementById('uploadFileInput');
+        if (fileInput.files.length === 0) {
+            showToast('请先选择文件', 'fa-exclamation-circle');
+            return;
+        }
+        
+        showToast('正在上传...');
+        setTimeout(() => {
+            showToast('上传成功，共 ' + fileInput.files.length + ' 个文件');
+            document.getElementById('uploadModal').style.display = 'none';
+            document.getElementById('uploadFileInput').value = '';
+            document.getElementById('uploadFileList').innerHTML = '';
+        }, 2000);
+    }
+
+    // 创建章节
+    function createChapter() {
+        var title = document.getElementById('newChapterTitle').value.trim();
+        var date = document.getElementById('newChapterDate').value;
+        
+        if (!title) {
+            showToast('请输入章节标题', 'fa-exclamation-circle');
+            return;
+        }
+        if (!date) {
+            showToast('请选择日期', 'fa-exclamation-circle');
+            return;
+        }
+        
+        showToast('创建章节：' + title);
+        document.getElementById('newChapterModal').style.display = 'none';
+        document.getElementById('newChapterTitle').value = '';
+        document.getElementById('newChapterDate').value = '';
+    }
+
+    // 图片预览
+    document.querySelectorAll('.btn-photo-preview').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var img = this.closest('.photo-grid-item').querySelector('img');
+            var lightbox = document.getElementById('lightboxOverlay');
+            var lightboxImg = document.getElementById('lightboxImg');
+            var lightboxCaption = document.getElementById('lightboxCaption');
+            
+            lightboxImg.src = img.src;
+            lightboxCaption.textContent = img.alt;
+            lightbox.classList.add('active');
+        });
+    });
+
+    // 关闭图片灯箱
+    document.getElementById('lightboxClose').addEventListener('click', function() {
+        document.getElementById('lightboxOverlay').classList.remove('active');
+    });
+
+    // 视频播放
+    document.querySelectorAll('.btn-video-play').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var card = this.closest('.chapter-card');
+            var img = card.querySelector('img');
+            var title = card.querySelector('.video-filename').textContent;
+            
+            var player = document.getElementById('videoPlayerOverlay');
+            var playerThumb = document.getElementById('videoPlayerThumb');
+            var playerTitle = document.getElementById('videoPlayerTitle');
+            
+            playerThumb.src = img.src;
+            playerTitle.textContent = title;
+            player.classList.add('active');
+        });
+    });
+
+    // 关闭视频播放器
+    document.getElementById('videoPlayerClose').addEventListener('click', function() {
+        document.getElementById('videoPlayerOverlay').classList.remove('active');
+    });
+
+    // 视频播放控制
+    document.getElementById('videoPlayerPlayBtn').addEventListener('click', function() {
+        this.classList.toggle('playing');
+        var icon = this.querySelector('i');
+        if (this.classList.contains('playing')) {
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+        } else {
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+        }
+    });
+
+    // 初始化页面
+    window.addEventListener('load', function() {
+        // 加载仪表盘数据
+        loadDashboard();
+        // 加载章节数据
+        loadAdminChapters();
+        // 加载照片数据
+        loadAdminPhotos();
+        // 加载视频数据
+        loadAdminVideos();
+        // 填充章节选择器
+        populateChapterSelects();
+        
+        // 初始化批量操作栏状态
+        document.querySelector('#admin-videos .batch-bar').style.display = 'none';
+        document.querySelector('#admin-photos .batch-bar').style.display = 'none';
+
+        });
+
     document.getElementById('btnBatchDeletePhotos').addEventListener('click', async function() {
         var allItems = document.querySelectorAll('#admin-photos .photo-grid-item');
         var checkedItems = [];
